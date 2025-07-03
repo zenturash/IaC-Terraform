@@ -1,9 +1,11 @@
 # Public IP for VPN Gateway
+# Note: As of Dec 2023, new VPN Gateways require Standard SKU public IPs (except Basic VPN Gateway)
+# Basic SKU public IPs are being retired in September 2025
 resource "azurerm_public_ip" "vpn_gateway" {
   name                = "pip-${var.vpn_gateway_name}"
   location            = var.location
   resource_group_name = var.resource_group_name
-  allocation_method   = "Static"
+  allocation_method   = "Static"  # Always Static for VPN Gateways (required for Standard, recommended for Basic)
   sku                 = var.vpn_gateway_sku == "Basic" ? "Basic" : "Standard"
   tags                = var.tags
 }

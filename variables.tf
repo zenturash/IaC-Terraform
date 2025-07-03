@@ -127,3 +127,94 @@ variable "os_disk_type" {
   type        = string
   default     = "Premium_LRS"
 }
+
+# Azure Landing Zone (ALZ) Configuration
+variable "architecture_mode" {
+  description = "Architecture deployment mode: single-vnet (current) or hub-spoke (ALZ)"
+  type        = string
+  default     = "single-vnet"
+  
+  validation {
+    condition     = contains(["single-vnet", "hub-spoke"], var.architecture_mode)
+    error_message = "Architecture mode must be either 'single-vnet' or 'hub-spoke'."
+  }
+}
+
+# Subscription Configuration
+variable "subscriptions" {
+  description = "Azure subscription configuration for multi-subscription deployments"
+  type = object({
+    hub_subscription_id   = optional(string)  # If null, uses default subscription
+    spoke_subscription_id = optional(string)  # If null, uses default subscription
+  })
+  default = {
+    hub_subscription_id   = null
+    spoke_subscription_id = null
+  }
+}
+
+variable "hub_vnet" {
+  description = "Hub VNet configuration for connectivity (ALZ hub-spoke mode)"
+  type = object({
+    enabled             = bool
+    name               = string
+    resource_group_name = string
+    cidr               = string
+    location           = optional(string)
+    subnets            = list(string)
+  })
+  default = {
+    enabled             = false
+    name               = "vnet-hub-connectivity"
+    resource_group_name = "rg-hub-connectivity"
+    cidr               = "10.1.0.0/20"
+    location           = null  # Will use global location if not specified
+    subnets            = ["GatewaySubnet", "AzureFirewallSubnet", "ManagementSubnet"]
+  }
+}
+
+variable "spoke_vnets" {
+  description = "Map of spoke VNets for workloads (ALZ hub-spoke mode)"
+  type = map(object({
+    enabled             = bool
+    name               = string
+    resource_group_name = string
+    cidr               = string
+    location           = optional(string)
+    subnets            = list(string)
+    peer_to_hub        = optional(bool, true)
+  }))
+  default = {}
+}
+
+variable "deploy_components" {
+  description = "Control which components to deploy"
+  type = object({
+    vpn_gateway = bool
+    vms         = bool
+    peering     = bool
+  })
+  default = {
+    vpn_gateway = false
+    vms         = true
+    peering     = false
+  }
+}
+
+variable "vnet_peering" {
+  description = "VNet peering configuration options"
+  type = object({
+    enabled                    = bool
+    allow_virtual_network_access = optional(bool, true)
+    allow_forwarded_traffic    = optional(bool, true)
+    allow_gateway_transit      = optional(bool, true)
+    use_remote_gateways        = optional(bool, true)
+  })
+  default = {
+    enabled                    = false
+    allow_virtual_network_access = true
+    allow_forwarded_traffic    = true
+    allow_gateway_transit      = true
+    use_remote_gateways        = true
+  }
+}

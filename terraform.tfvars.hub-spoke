@@ -9,6 +9,19 @@ admin_username = "azureuser"
 admin_password = "ComplexPassword123!"
 location       = "West Europe"
 
+# Subscription Configuration (Multi-Subscription ALZ)
+# Leave null to use the same subscription for both hub and spoke
+subscriptions = {
+  hub_subscription_id   = null  # Replace with hub subscription ID if different
+  spoke_subscription_id = null  # Replace with spoke subscription ID if different
+}
+
+# Example for multi-subscription deployment:
+# subscriptions = {
+#   hub_subscription_id   = "12345678-1234-1234-1234-123456789abc"    # Connectivity subscription
+#   spoke_subscription_id = "87654321-4321-4321-4321-cba987654321"    # Workload subscription
+# }
+
 # Component Deployment Control
 deploy_components = {
   vpn_gateway = true   # Deploy VPN Gateway in hub

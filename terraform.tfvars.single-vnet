@@ -1,0 +1,115 @@
+# Single VNet Configuration (Backward Compatibility)
+# This configuration maintains the original single VNet approach
+
+# Architecture Mode - Keep original single VNet
+architecture_mode = "single-vnet"
+
+# Global settings
+admin_username = "azureuser"
+admin_password = "ComplexPassword123!"
+location       = "West Europe"
+
+# Subscription Configuration (Single subscription for all resources)
+subscriptions = {
+  hub_subscription_id   = null  # Not used in single-vnet mode
+  spoke_subscription_id = null  # Not used in single-vnet mode
+}
+
+# Component Deployment Control
+deploy_components = {
+  vpn_gateway = true   # Deploy VPN Gateway in single VNet
+  vms         = true   # Deploy VMs in single VNet
+  peering     = false  # No peering in single VNet mode
+}
+
+# Network configuration (Single VNet)
+vnet_cidr = "10.0.0.0/20"
+
+# Define subnet names - CIDRs will be automatically calculated
+subnet_names = ["subnet-poc", "subnet-app", "subnet-mgmt"]
+
+# Create a gateway subnet for VPN/ExpressRoute
+create_gateway_subnet = true
+
+# VPN Configuration - Basic Setup
+enable_vpn = true
+vpn_configuration = {
+  vpn_gateway_name = "vpn-gateway-basic"
+  vpn_gateway_sku  = "Basic"              # Most cost-effective for POC
+  vpn_type         = "RouteBased"         # Standard for most scenarios
+  enable_bgp       = false                # Keep simple for basic setup
+  
+  local_network_gateway = {
+    name            = "local-gateway-office"
+    gateway_address = "203.0.113.12"           # Replace with YOUR actual public IP
+    address_space   = ["192.168.0.0/16"]       # Replace with YOUR on-premises networks
+  }
+  
+  vpn_connection = {
+    name                = "vpn-connection-basic"
+    shared_key          = "YourSecureSharedKey123!"  # Use a strong pre-shared key
+    connection_protocol = "IKEv2"                     # Standard protocol
+  }
+}
+
+# Define virtual machines
+virtual_machines = {
+  "poc-vm01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "subnet-poc"
+    resource_group_name = "rg-poc"
+    enable_public_ip    = false
+    os_disk_type        = "Premium_LRS"
+    # No NSG rules needed for private VM
+  }
+  "app-01" = {
+    vm_size             = "Standard_D2s_v3"
+    subnet_name         = "subnet-app"
+    resource_group_name = "rg-app"
+    enable_public_ip    = false
+    os_disk_type        = "Premium_LRS"
+    # No NSG rules needed for private VM
+  }
+  "mgmt-vm-01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "subnet-mgmt"
+    resource_group_name = "rg-management"
+    enable_public_ip    = true
+    os_disk_type        = "Premium_LRS"
+    nsg_rules = [
+      {
+        name                       = "AllowRDP"
+        priority                   = 1000
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "3389"
+        source_address_prefix      = "93.161.18.8/32"  # Allow RDP only from your IP
+        destination_address_prefix = "*"
+      }
+    ]
+  }
+}
+
+# ALZ variables (not used in single-vnet mode but required for compatibility)
+hub_vnet = {
+  enabled             = false
+  name               = "vnet-hub-connectivity"
+  resource_group_name = "rg-hub-connectivity"
+  cidr               = "10.1.0.0/20"
+  subnets            = ["GatewaySubnet"]
+}
+
+spoke_vnets = {}
+
+vnet_peering = {
+  enabled = false
+}
+
+# Deployment Notes:
+# 1. This maintains the original single VNet architecture
+# 2. All resources (VPN, VMs) are deployed in the same VNet
+# 3. VPN Gateway and VMs share the same network space
+# 4. This is the backward-compatible configuration
+# 5. To enable VPN deployment, ensure gateway_address and address_space are correct

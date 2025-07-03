@@ -1,17 +1,33 @@
-# Azure VM OpenTofu Module
+# Azure Landing Zone (ALZ) OpenTofu Module
 
-A simple proof-of-concept (POC) OpenTofu module for creating Azure Virtual Machines with all necessary networking components.
+A flexible OpenTofu module for deploying Azure infrastructure with support for both single VNet and Azure Landing Zone (ALZ) hub-spoke architectures. Perfect for POCs, development environments, and production ALZ implementations.
 
-## Features
+## 🏗️ Architecture Support
 
-- **Complete Infrastructure**: Creates Resource Group, Virtual Network, Subnet, Network Interface, and Virtual Machine
+### Single VNet (Original)
+- All resources in one VNet
+- Simple deployment model
+- Backward compatible
+
+### Hub-Spoke ALZ
+- Dedicated hub VNet for connectivity (VPN, ExpressRoute)
+- Separate spoke VNets for workloads
+- VNet peering between hub and spokes
+- Centralized connectivity management
+
+## 🚀 Features
+
+- **Dual Architecture Support**: Choose between single-vnet or hub-spoke ALZ
+- **Variable-Controlled Deployment**: Control exactly what gets deployed
+- **Complete Infrastructure**: Resource Groups, VNets, Subnets, VMs, VPN Gateway
+- **VNet Peering**: Automatic hub-spoke peering configuration
 - **Windows Server 2025**: Latest Windows Server with password authentication
-- **Configurable**: VM name, size, and network settings are customizable
-- **Optional Public IP**: Enable/disable public IP assignment
+- **Flexible VM Deployment**: Deploy VMs in appropriate network tiers
+- **VPN Gateway**: Site-to-site VPN connectivity
 - **Comprehensive Tagging**: Automatic tagging with creation date and metadata
-- **Self-contained**: Module creates its own resource group
+- **Backward Compatibility**: Existing configurations continue to work
 
-## Quick Start
+## 🏃 Quick Start
 
 ### Prerequisites
 
@@ -21,230 +37,383 @@ A simple proof-of-concept (POC) OpenTofu module for creating Azure Virtual Machi
 
 ### Authentication
 
-Authenticate with Azure CLI:
 ```bash
 az login
 az account set --subscription "your-subscription-id"
 ```
 
-### Basic Usage
+### Option 1: Single VNet (Original)
 
-1. **Clone or download this repository**
+```bash
+# Use the single VNet configuration
+cp terraform.tfvars.single-vnet terraform.tfvars
 
-2. **Copy the example configuration:**
-   ```bash
-   cp terraform.tfvars.example terraform.tfvars
-   ```
+# Edit terraform.tfvars with your values
+# Initialize and deploy
+tofu init
+tofu plan
+tofu apply
+```
 
-3. **Edit terraform.tfvars with your values:**
-   ```hcl
-   vm_name        = "my-poc-vm"
-   admin_username = "azureuser"
-   admin_password = "YourSecurePassword123!"
-   ```
+### Option 2: Hub-Spoke ALZ
 
-4. **Initialize and apply:** -auto-approve
-   ```bash
-   tofu init
-   tofu plan
-   tofu apply
-   ```
+```bash
+# Use the ALZ hub-spoke configuration
+cp terraform.tfvars.hub-spoke terraform.tfvars
 
-5. **Connect to your VM:**
-   After deployment, use the RDP connection string from the output to connect to your VM.
+# Edit terraform.tfvars with your values
+# Initialize and deploy
+tofu init
+tofu plan
+tofu apply
+```
 
-## Module Usage
+## 📋 Configuration Options
 
-### Basic Example
+### Architecture Selection
+
+Control your deployment architecture with the `architecture_mode` variable:
 
 ```hcl
-module "vm" {
-  source = "./modules/azure-vm"
+# Single VNet (backward compatible)
+architecture_mode = "single-vnet"
 
-  vm_name        = "poc-vm-01"
-  admin_username = "azureuser"
-  admin_password = "YourSecurePassword123!"
-  
-  vm_size          = "Standard_B2s"
-  location         = "West Europe"
-  enable_public_ip = true
+# Hub-Spoke ALZ
+architecture_mode = "hub-spoke"
+```
+
+### Component Deployment Control
+
+Choose which components to deploy:
+
+```hcl
+deploy_components = {
+  vpn_gateway = true   # Deploy VPN Gateway
+  vms         = true   # Deploy Virtual Machines
+  peering     = true   # Enable VNet peering (hub-spoke only)
 }
 ```
 
-### Advanced Example
+## 🏗️ Hub-Spoke ALZ Configuration
+
+### Hub VNet (Connectivity)
 
 ```hcl
-module "vm" {
-  source = "./modules/azure-vm"
-
-  # Required
-  vm_name        = "production-vm"
-  admin_username = "adminuser"
-  admin_password = "ComplexPassword123!"
-  
-  # Optional customization
-  vm_size             = "Standard_D2s_v3"
-  location            = "North Europe"
-  resource_group_name = "rg-production"
-  enable_public_ip    = false
-  
-  # Network customization
-  vnet_cidr   = "172.16.0.0/20"
-  subnet_cidr = "172.16.1.0/24"
-  
-  # Storage customization
-  os_disk_type = "StandardSSD_LRS"
+hub_vnet = {
+  enabled             = true
+  name               = "vnet-hub-connectivity"
+  resource_group_name = "rg-hub-connectivity"
+  cidr               = "10.1.0.0/20"
+  location           = "West Europe"
+  subnets            = ["GatewaySubnet", "AzureFirewallSubnet", "ManagementSubnet"]
 }
 ```
 
-## Configuration
+### Spoke VNets (Workloads)
 
-### Required Variables
+```hcl
+spoke_vnets = {
+  "workload" = {
+    enabled             = true
+    name               = "vnet-spoke-workload"
+    resource_group_name = "rg-spoke-workload"
+    cidr               = "10.2.0.0/20"
+    location           = "West Europe"
+    subnets            = ["subnet-app", "subnet-data", "subnet-mgmt"]
+    peer_to_hub        = true
+  }
+  "dmz" = {
+    enabled             = true
+    name               = "vnet-spoke-dmz"
+    resource_group_name = "rg-spoke-dmz"
+    cidr               = "10.3.0.0/20"
+    location           = "West Europe"
+    subnets            = ["subnet-web", "subnet-lb"]
+    peer_to_hub        = true
+  }
+}
+```
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `vm_name` | string | Name of the virtual machine |
-| `admin_username` | string | Administrator username |
-| `admin_password` | string | Administrator password (12-123 characters) |
+### VNet Peering Configuration
 
-### Optional Variables
+```hcl
+vnet_peering = {
+  enabled                    = true
+  allow_virtual_network_access = true
+  allow_forwarded_traffic    = true
+  allow_gateway_transit      = true   # Hub provides gateway
+  use_remote_gateways        = true   # Spokes use hub gateway
+}
+```
 
-| Variable | Type | Default | Description |
-|----------|------|---------|-------------|
-| `vm_size` | string | `Standard_B2s` | Azure VM size |
-| `location` | string | `West Europe` | Azure region |
-| `resource_group_name` | string | `rg-vm-poc` | Base name for resource group |
-| `enable_public_ip` | bool | `true` | Create public IP |
-| `vnet_cidr` | string | `10.0.0.0/20` | Virtual network CIDR |
-| `subnet_cidr` | string | `10.0.1.0/24` | Subnet CIDR |
-| `os_disk_type` | string | `Premium_LRS` | OS disk storage type |
+## 🖥️ Virtual Machine Configuration
 
-### Supported VM Sizes
+VMs are deployed in the appropriate network tier based on architecture:
 
-- `Standard_B1s`, `Standard_B2s`, `Standard_B4ms`
-- `Standard_D2s_v3`, `Standard_D4s_v3`, `Standard_D8s_v3`
-- `Standard_E2s_v3`, `Standard_E4s_v3`, `Standard_E8s_v3`
-- `Standard_F2s_v2`, `Standard_F4s_v2`, `Standard_F8s_v2`
+```hcl
+virtual_machines = {
+  "app-vm-01" = {
+    vm_size             = "Standard_D2s_v3"
+    subnet_name         = "subnet-app"        # Deployed in spoke (ALZ) or single VNet
+    resource_group_name = "rg-workload-app"
+    enable_public_ip    = false
+    os_disk_type        = "Premium_LRS"
+  }
+  "mgmt-vm-01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "subnet-mgmt"
+    resource_group_name = "rg-workload-mgmt"
+    enable_public_ip    = true               # Management access
+    os_disk_type        = "Premium_LRS"
+    nsg_rules = [
+      {
+        name                       = "AllowRDP"
+        priority                   = 1000
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "3389"
+        source_address_prefix      = "YOUR.IP.ADDRESS/32"
+        destination_address_prefix = "*"
+      }
+    ]
+  }
+}
+```
 
-## Outputs
+## 🔐 VPN Configuration
 
-| Output | Description |
-|--------|-------------|
-| `vm_name` | Name of the created VM |
-| `vm_id` | Azure resource ID of the VM |
-| `resource_group_name` | Name of the created resource group |
-| `private_ip_address` | Private IP address |
-| `public_ip_address` | Public IP address (if enabled) |
-| `rdp_connection_string` | RDP connection command |
-| `virtual_network_name` | Name of the virtual network |
-| `subnet_name` | Name of the subnet |
-| `tags` | Applied resource tags |
+VPN Gateway is deployed in the hub (ALZ) or single VNet:
 
-## Project Structure
+```hcl
+vpn_configuration = {
+  vpn_gateway_name = "vpn-gateway-hub"
+  vpn_gateway_sku  = "VpnGw1"              # Standard SKU
+  vpn_type         = "RouteBased"
+  enable_bgp       = false
+  
+  local_network_gateway = {
+    name            = "local-gateway-office"
+    gateway_address = "YOUR.PUBLIC.IP"      # Your on-premises public IP
+    address_space   = ["192.168.0.0/16"]   # Your on-premises networks
+  }
+  
+  vpn_connection = {
+    name                = "vpn-connection-hub"
+    shared_key          = "YourSecureSharedKey123!"
+    connection_protocol = "IKEv2"
+  }
+}
+```
+
+## 📊 Outputs
+
+### Architecture Information
+
+```hcl
+# Current architecture mode
+output "architecture_mode"
+
+# Single VNet outputs (backward compatibility)
+output "virtual_network_name"
+output "subnet_ids"
+
+# Hub-Spoke ALZ outputs
+output "hub_vnet"           # Hub VNet information
+output "spoke_vnets"        # All spoke VNets information
+output "vnet_peering"       # Peering status and configuration
+```
+
+### Virtual Machines
+
+```hcl
+output "virtual_machines"   # Complete VM information
+output "rdp_connections"    # RDP connection strings
+output "vm_private_ips"     # Private IP addresses
+output "vm_public_ips"      # Public IP addresses (if enabled)
+```
+
+### VPN Gateway
+
+```hcl
+output "vpn_gateway_info"   # VPN Gateway details
+output "vpn_summary"        # Complete VPN configuration
+```
+
+### Deployment Summary
+
+```hcl
+output "deployment_summary" # Overview of deployed resources
+output "connection_guide"   # Quick connection guide
+```
+
+## 📁 Project Structure
 
 ```
 .
 ├── modules/
-│   └── azure-vm/           # Reusable VM module
-│       ├── main.tf
-│       ├── variables.tf
-│       ├── outputs.tf
-│       └── versions.tf
-├── examples/
-│   └── basic-vm/           # Usage example
+│   ├── azure-networking/   # VNet and subnet management
+│   ├── azure-vm/          # Virtual machine deployment
+│   ├── azure-vpn/         # VPN Gateway and connections
+│   └── azure-vnet-peering/ # VNet peering management
 ├── memory-bank/            # Project documentation
-├── main.tf                 # Root configuration
-├── variables.tf
-├── outputs.tf
-├── terraform.tfvars.example
+├── main.tf                 # Root configuration with conditional logic
+├── variables.tf            # All configuration variables
+├── outputs.tf              # Comprehensive outputs
+├── terraform.tfvars.single-vnet    # Single VNet example
+├── terraform.tfvars.hub-spoke      # Hub-Spoke ALZ example
+├── terraform.tfvars.example        # Original example
 └── README.md
 ```
 
-## Resource Tagging
+## 🎯 Use Cases
 
-All resources are automatically tagged with:
-- `creation_date`: Current date
-- `creation_method`: "OpenTofu"
-- `os_type`: "Windows Server 2025"
-- `vm_size`: The VM size used
-- `environment`: "POC"
-- `project`: "Azure VM POC"
+### Single VNet Mode
+- **Development environments**
+- **Simple POCs**
+- **Small workloads**
+- **Backward compatibility**
 
-## Security Considerations
+### Hub-Spoke ALZ Mode
+- **Production environments**
+- **Multi-tier applications**
+- **Centralized connectivity**
+- **Compliance requirements**
+- **Scalable architecture**
 
-- **Password Authentication**: Uses password-based authentication for simplicity
-- **No NSG**: Relies on Azure default security (as requested for POC)
-- **Public IP**: Optional - can be disabled for private-only access
-- **Sensitive Variables**: Password is marked as sensitive
+## 🔧 Advanced Configuration
 
-## Resource Lifecycle Management
+### Multiple Spoke VNets
 
-### Deployment
+```hcl
+spoke_vnets = {
+  "production" = {
+    enabled = true
+    name = "vnet-spoke-prod"
+    cidr = "10.2.0.0/20"
+    subnets = ["subnet-web", "subnet-app", "subnet-db"]
+    peer_to_hub = true
+  }
+  "development" = {
+    enabled = true
+    name = "vnet-spoke-dev"
+    cidr = "10.3.0.0/20"
+    subnets = ["subnet-dev-app", "subnet-dev-db"]
+    peer_to_hub = true
+  }
+  "dmz" = {
+    enabled = false  # Can be enabled later
+    name = "vnet-spoke-dmz"
+    cidr = "10.4.0.0/20"
+    subnets = ["subnet-public", "subnet-waf"]
+    peer_to_hub = true
+  }
+}
+```
+
+### Conditional Deployments
+
+```hcl
+# Deploy only networking (no VMs or VPN)
+deploy_components = {
+  vpn_gateway = false
+  vms         = false
+  peering     = true
+}
+
+# Deploy everything
+deploy_components = {
+  vpn_gateway = true
+  vms         = true
+  peering     = true
+}
+```
+
+## 🚀 Deployment Examples
+
+### Basic ALZ Deployment
+
 ```bash
-# Initialize the project
+# 1. Copy ALZ configuration
+cp terraform.tfvars.hub-spoke terraform.tfvars
+
+# 2. Edit configuration
+# - Update IP addresses
+# - Configure VPN settings
+# - Define VM requirements
+
+# 3. Deploy
 tofu init
-
-# Review the deployment plan
 tofu plan
-
-# Deploy the infrastructure
 tofu apply
 ```
 
-### Resource Dependencies
-OpenTofu automatically manages resource dependencies in the correct order:
+### Phased Deployment
 
-**Creation Order:**
-1. Resource Groups (networking and compute)
-2. Virtual Network
-3. Subnets
-4. Public IP (if enabled)
-5. Network Interface
-6. Virtual Machine
-
-**Destruction Order:**
-1. Virtual Machine
-2. Network Interface
-3. Public IP
-4. Subnets
-5. Virtual Network
-6. Resource Groups
-
-### Common Issues and Solutions
-
-#### Public IP Deletion Error
-If you encounter: `PublicIPAddressCannotBeDeleted: Public IP address ... can not be deleted since it is still allocated to resource`
-
-**Solution:** OpenTofu handles this automatically by destroying resources in dependency order. If you encounter this error:
-1. Ensure the VM is destroyed first
-2. Run `tofu destroy` again - it will retry the failed resources -auto-approve
-3. The public IP will be freed once the network interface is destroyed
-
-#### Resource Group Dependencies
-Resource groups are destroyed last to ensure all contained resources are removed first.
-
-### Cleanup
-
-To destroy all created resources:
 ```bash
-tofu destroy
+# Phase 1: Deploy networking only
+# Set deploy_components.vms = false
+# Set deploy_components.vpn_gateway = false
+tofu apply
+
+# Phase 2: Add VPN Gateway
+# Set deploy_components.vpn_gateway = true
+tofu apply
+
+# Phase 3: Add Virtual Machines
+# Set deploy_components.vms = true
+tofu apply
 ```
 
-**Note:** The destroy process may take 3-5 minutes as Azure needs to properly deallocate all resources.
+## 🏷️ Resource Tagging
 
-## Examples
+All resources are automatically tagged:
 
-See the `examples/basic-vm/` directory for a complete working example.
+```hcl
+tags = {
+  creation_date   = "2025-01-07"
+  creation_method = "OpenTofu"
+  environment     = "POC"
+  project         = "Azure ALZ POC"
+  tier           = "networking-hub|networking-spoke|vpn|vm"
+  architecture   = "single-vnet|hub-spoke"
+}
+```
 
-## Contributing
+## 🔒 Security Considerations
 
-This is a POC project focused on simplicity. For production use, consider adding:
-- Network Security Groups
-- SSH key authentication for Linux VMs
+- **Network Segmentation**: Hub-spoke provides natural network segmentation
+- **Centralized Connectivity**: VPN and ExpressRoute in hub only
+- **Private VMs**: Application VMs can be deployed without public IPs
+- **Management Access**: Dedicated management subnet with controlled access
+- **NSG Rules**: Configurable Network Security Group rules per VM
+
+## 🧹 Cleanup
+
+```bash
+# Destroy all resources
+tofu destroy
+
+# Note: VPN Gateway deletion takes 10-15 minutes
+# VNet peering is automatically removed with VNets
+```
+
+## 📚 Examples
+
+- `terraform.tfvars.single-vnet`: Backward-compatible single VNet
+- `terraform.tfvars.hub-spoke`: Complete ALZ hub-spoke setup
+- `terraform.tfvars.example`: Original simple configuration
+
+## 🤝 Contributing
+
+This project supports both simple POCs and production ALZ implementations. For additional features:
+- Azure Firewall integration
+- ExpressRoute support
+- Multiple regions
+- Advanced monitoring
 - Backup configuration
-- Monitoring setup
-- Multiple availability zones
 
-## License
+## 📄 License
 
-This project is provided as-is for educational and POC purposes.
+This project is provided as-is for educational and production use.

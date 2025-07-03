@@ -16,26 +16,34 @@ subnet_names = ["subnet-poc", "subnet-app", "subnet-mgmt"]
 # Note: Disabled for now since changing existing subnet CIDRs requires VM recreation
 create_gateway_subnet = true
 
-# VPN Configuration (disabled by default)
-enable_vpn = false
+# VPN Configuration - Basic Setup (change enable_vpn to true to deploy)
+enable_vpn = true
 vpn_configuration = {
-  vpn_gateway_name = "vpn-gateway-main"
-  vpn_gateway_sku  = "VpnGw1"
-  vpn_type         = "RouteBased"
-  enable_bgp       = false
+  vpn_gateway_name = "vpn-gateway-basic"
+  vpn_gateway_sku  = "Basic"              # Most cost-effective for POC
+  vpn_type         = "RouteBased"         # Standard for most scenarios
+  enable_bgp       = false                # Keep simple for basic setup
   
   local_network_gateway = {
     name            = "local-gateway-office"
-    gateway_address = "203.0.113.12"           # Replace with your public IP
-    address_space   = ["192.168.0.0/16"]       # Replace with your on-premises networks
+    gateway_address = "203.0.113.12"           # Replace with YOUR actual public IP
+    address_space   = ["192.168.0.0/16"]       # Replace with YOUR on-premises networks
   }
   
   vpn_connection = {
-    name                = "vpn-connection-office"
-    shared_key          = "YourSecureSharedKey123!"  # Change this!
-    connection_protocol = "IKEv2"
+    name                = "vpn-connection-basic"
+    shared_key          = "YourSecureSharedKey123!"  # Use a strong pre-shared key
+    connection_protocol = "IKEv2"                     # Standard protocol
   }
 }
+
+# To enable VPN deployment:
+# 1. Set enable_vpn = true
+# 2. Replace gateway_address with your actual public IP
+# 3. Replace address_space with your on-premises network CIDRs
+# 4. Set a strong shared_key (must match your on-premises VPN device)
+# 5. Run: tofu plan && tofu apply
+# Note: VPN Gateway creation takes 30-45 minutes
 
 # Define virtual machines with NSG rules
 virtual_machines = {

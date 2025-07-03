@@ -82,6 +82,7 @@ output "rdp_connections" {
 # VPN Information (conditional)
 output "vpn_gateway_info" {
   description = "VPN Gateway information (if VPN is enabled)"
+  sensitive   = true
   value = var.enable_vpn ? {
     vpn_gateway_name      = module.vpn[0].vpn_gateway_name
     vpn_gateway_public_ip = module.vpn[0].vpn_gateway_public_ip
@@ -96,6 +97,7 @@ output "vpn_gateway_info" {
 
 output "vpn_summary" {
   description = "Complete VPN summary (if VPN is enabled)"
+  sensitive   = true
   value = var.enable_vpn ? module.vpn[0].vpn_summary : null
 }
 

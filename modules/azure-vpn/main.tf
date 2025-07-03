@@ -5,7 +5,7 @@ resource "azurerm_public_ip" "vpn_gateway" {
   name                = "pip-${var.vpn_gateway_name}"
   location            = var.location
   resource_group_name = var.resource_group_name
-  allocation_method   = "Static"  # Always Static for VPN Gateways (required for Standard, recommended for Basic)
+  allocation_method   = var.vpn_gateway_sku == "Basic" ? "Dynamic" : "Static"  # Basic requires Dynamic, Standard requires Static
   sku                 = var.vpn_gateway_sku == "Basic" ? "Basic" : "Standard"
   tags                = var.tags
 }
@@ -72,9 +72,9 @@ resource "azurerm_virtual_network_gateway_connection" "vpn_connection" {
   shared_key                 = var.vpn_connection.shared_key
   connection_protocol        = var.vpn_connection.connection_protocol
 
-  # Custom IPSec policy (optional)
+  # Custom IPSec policy (only supported on Standard SKU or higher)
   dynamic "ipsec_policy" {
-    for_each = var.vpn_connection.ipsec_policy != null ? [var.vpn_connection.ipsec_policy] : []
+    for_each = var.vpn_connection.ipsec_policy != null && var.vpn_gateway_sku != "Basic" ? [var.vpn_connection.ipsec_policy] : []
     content {
       dh_group         = ipsec_policy.value.dh_group
       ike_encryption   = ipsec_policy.value.ike_encryption

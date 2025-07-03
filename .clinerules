@@ -1,0 +1,52 @@
+# Azure VM OpenTofu Module - Project Intelligence
+
+## Project Context
+This is an OpenTofu (not Terraform) project for creating Azure Virtual Machines with a reusable module approach. The user specifically requested OpenTofu over Terraform, and this is a POC project focused on simplicity.
+
+## Key User Preferences
+- **OpenTofu over Terraform**: Always use OpenTofu terminology and ensure compatibility
+- **Simplicity First**: This is a POC, so avoid over-engineering
+- **Password Authentication**: User specifically wants password auth, not SSH keys
+- **No NSG**: User explicitly said no Network Security Groups needed
+- **Self-contained Module**: Module should create its own resource group
+
+## Technical Patterns Discovered
+- User prefers West Europe region as default
+- Windows Server 2025 is the target OS
+- VNet should be /20 with /24 subnet
+- Comprehensive tagging is important (creation date, method, etc.)
+- VM size and name should be configurable parameters
+
+## File Organization Preferences
+- Standard Terraform/OpenTofu module structure
+- Separate variables, outputs, and versions files
+- Examples directory for usage demonstrations
+- Memory bank for project documentation
+
+## Implementation Notes
+- Use `formatdate("YYYY-MM-DD", timestamp())` for creation date tags
+- Implement conditional public IP with count parameter
+- Add VM size validation for Azure-specific sizes
+- Use random suffix for resource group naming to avoid conflicts
+
+## User Communication Style
+- Direct and technical
+- Prefers concise explanations
+- Values working code over extensive documentation
+- Appreciates POC-focused solutions
+
+## Azure-Specific Considerations
+- Target region: West Europe
+- Use Premium_LRS for OS disks (better performance)
+- Standard SKU for public IPs
+- Dynamic IP allocation for private IPs
+- Windows Server 2025 from MicrosoftWindowsServer publisher
+
+## Development Workflow
+1. Memory bank documentation first
+2. Core module implementation
+3. Example usage
+4. Root configuration
+5. Testing and validation
+
+This project follows the Memory Bank pattern for documentation and uses standard OpenTofu module conventions.

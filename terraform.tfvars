@@ -16,6 +16,27 @@ subnet_names = ["subnet-poc", "subnet-app", "subnet-mgmt"]
 # Note: Disabled for now since changing existing subnet CIDRs requires VM recreation
 create_gateway_subnet = true
 
+# VPN Configuration (disabled by default)
+enable_vpn = false
+vpn_configuration = {
+  vpn_gateway_name = "vpn-gateway-main"
+  vpn_gateway_sku  = "VpnGw1"
+  vpn_type         = "RouteBased"
+  enable_bgp       = false
+  
+  local_network_gateway = {
+    name            = "local-gateway-office"
+    gateway_address = "203.0.113.12"           # Replace with your public IP
+    address_space   = ["192.168.0.0/16"]       # Replace with your on-premises networks
+  }
+  
+  vpn_connection = {
+    name                = "vpn-connection-office"
+    shared_key          = "YourSecureSharedKey123!"  # Change this!
+    connection_protocol = "IKEv2"
+  }
+}
+
 # Define virtual machines with NSG rules
 virtual_machines = {
   "poc-vm01" = {

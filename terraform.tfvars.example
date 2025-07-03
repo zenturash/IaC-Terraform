@@ -18,6 +18,27 @@ subnet_names = ["subnet-web", "subnet-app", "subnet-db", "subnet-mgmt"]
 create_gateway_subnet = true
 # Result: GatewaySubnet will be at 10.0.15.0/24 (last /24 in the /20 range)
 
+# VPN Configuration (optional)
+enable_vpn = true
+vpn_configuration = {
+  vpn_gateway_name = "vpn-gateway-main"
+  vpn_gateway_sku  = "VpnGw1"        # Options: Basic, VpnGw1, VpnGw2, VpnGw3, VpnGw1AZ, etc.
+  vpn_type         = "RouteBased"    # RouteBased or PolicyBased
+  enable_bgp       = false           # Enable BGP routing
+  
+  local_network_gateway = {
+    name            = "local-gateway-office"
+    gateway_address = "203.0.113.12"           # Replace with your public IP
+    address_space   = ["192.168.0.0/16"]       # Replace with your on-premises networks
+  }
+  
+  vpn_connection = {
+    name                = "vpn-connection-office"
+    shared_key          = "YourSecureSharedKey123!"  # Change this!
+    connection_protocol = "IKEv2"
+  }
+}
+
 # Define multiple virtual machines with NSG rules
 virtual_machines = {
   "web-vm-01" = {

@@ -63,3 +63,37 @@ module "vms" {
   # NSG configuration
   nsg_rules = each.value.nsg_rules
 }
+
+# Create VPN Gateway and connection (conditional)
+module "vpn" {
+  count  = var.enable_vpn ? 1 : 0
+  source = "./modules/azure-vpn"
+
+  # Required variables
+  vpn_gateway_name    = var.vpn_configuration.vpn_gateway_name
+  resource_group_name = module.networking.networking_resource_group_name
+  location            = var.location
+  gateway_subnet_id   = module.networking.subnet_ids["GatewaySubnet"]
+
+  # VPN Gateway configuration
+  vpn_gateway_sku        = var.vpn_configuration.vpn_gateway_sku
+  vpn_type              = var.vpn_configuration.vpn_type
+  enable_bgp            = var.vpn_configuration.enable_bgp
+
+  # Local Network Gateway configuration
+  local_network_gateway = var.vpn_configuration.local_network_gateway
+
+  # VPN Connection configuration
+  vpn_connection = var.vpn_configuration.vpn_connection
+
+  tags = {
+    creation_date   = formatdate("YYYY-MM-DD", timestamp())
+    creation_method = "OpenTofu"
+    environment     = "POC"
+    project         = "Azure Multi-VM POC"
+    tier           = "vpn"
+  }
+
+  # Ensure networking is created first
+  depends_on = [module.networking]
+}

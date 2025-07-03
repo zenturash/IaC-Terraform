@@ -80,6 +80,48 @@ variable "create_gateway_subnet" {
   default     = false
 }
 
+# VPN Configuration
+variable "enable_vpn" {
+  description = "Whether to deploy VPN Gateway and connection"
+  type        = bool
+  default     = false
+}
+
+variable "vpn_configuration" {
+  description = "VPN Gateway and connection configuration"
+  type = object({
+    vpn_gateway_name = string
+    vpn_gateway_sku  = optional(string, "VpnGw1")
+    vpn_type         = optional(string, "RouteBased")
+    enable_bgp       = optional(bool, false)
+    
+    local_network_gateway = object({
+      name            = string
+      gateway_address = string           # Public IP of on-premises VPN device
+      address_space   = list(string)     # On-premises network CIDRs
+    })
+    
+    vpn_connection = object({
+      name                = string
+      shared_key          = string       # Pre-shared key for VPN connection
+      connection_protocol = optional(string, "IKEv2")
+    })
+  })
+  default = {
+    vpn_gateway_name = "vpn-gateway"
+    local_network_gateway = {
+      name            = "local-gateway"
+      gateway_address = "1.2.3.4"
+      address_space   = ["192.168.0.0/16"]
+    }
+    vpn_connection = {
+      name       = "vpn-connection"
+      shared_key = "change-this-key"
+    }
+  }
+  sensitive = true
+}
+
 variable "os_disk_type" {
   description = "Storage account type for the OS disk"
   type        = string

@@ -79,12 +79,32 @@ output "rdp_connections" {
   }
 }
 
+# VPN Information (conditional)
+output "vpn_gateway_info" {
+  description = "VPN Gateway information (if VPN is enabled)"
+  value = var.enable_vpn ? {
+    vpn_gateway_name      = module.vpn[0].vpn_gateway_name
+    vpn_gateway_public_ip = module.vpn[0].vpn_gateway_public_ip
+    local_gateway_name    = module.vpn[0].local_network_gateway_name
+    local_gateway_ip      = module.vpn[0].local_network_gateway_address
+    connection_name       = module.vpn[0].vpn_connection_name
+    connection_status     = module.vpn[0].vpn_connection_status
+    vpn_type             = module.vpn[0].vpn_gateway_type
+    sku                  = module.vpn[0].vpn_gateway_sku
+  } : null
+}
+
+output "vpn_summary" {
+  description = "Complete VPN summary (if VPN is enabled)"
+  value = var.enable_vpn ? module.vpn[0].vpn_summary : null
+}
+
 # Summary
 output "deployment_summary" {
   description = "Summary of the deployment"
   value = {
     total_vms = length(var.virtual_machines)
-    total_subnets = length(var.subnet_names)
+    total_subnets = length(var.subnet_names) + (var.create_gateway_subnet ? 1 : 0)
     vms_with_public_ip = length([
       for vm_name, vm_config in var.virtual_machines : vm_name
       if vm_config.enable_public_ip
@@ -92,5 +112,7 @@ output "deployment_summary" {
     resource_groups = length(distinct([
       for vm_name, vm_config in var.virtual_machines : vm_config.resource_group_name
     ])) + 1  # +1 for networking RG
+    vpn_enabled = var.enable_vpn
+    gateway_subnet_created = var.create_gateway_subnet
   }
 }

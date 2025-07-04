@@ -44,7 +44,22 @@ locals {
   # Determine which VNet to use for VMs based on architecture mode
   vm_vnet_subnet_ids = var.architecture_mode == "hub-spoke" ? (
     length(module.spoke_networking) > 0 ? values(module.spoke_networking)[0].subnet_ids : {}
-  ) : module.single_networking[0].subnet_ids
+  ) : length(module.single_networking) > 0 ? module.single_networking[0].subnet_ids : {}
+  
+  # Create a map of all subnet IDs across hub and spokes for VM deployment
+  all_subnet_ids = var.architecture_mode == "hub-spoke" ? merge(
+    # Hub subnets
+    length(module.hub_networking) > 0 ? module.hub_networking[0].subnet_ids : {},
+    # All spoke subnets
+    flatten([
+      for spoke_name, spoke_module in module.spoke_networking : [
+        for subnet_name, subnet_id in spoke_module.subnet_ids : {
+          "${spoke_name}/${subnet_name}" = subnet_id
+          "${subnet_name}" = subnet_id  # Also allow direct subnet name lookup for backward compatibility
+        }
+      ]
+    ])...
+  ) : local.vm_vnet_subnet_ids
   
   # Determine which VNet to use for VPN based on architecture mode
   vpn_vnet_info = var.architecture_mode == "hub-spoke" ? {
@@ -122,7 +137,7 @@ module "spoke_networking" {
     tier = "networking-spoke"
     role = "workload"
     spoke_name = each.key
-    subscription_id = each.value.subscription_id != null ? each.value.subscription_id : lookup(var.subscriptions.spoke, each.key, null)
+    subscription_id = lookup(var.subscriptions.spoke, each.value.spoke_name != null ? each.value.spoke_name : each.key, null)
   })
 }
 
@@ -193,7 +208,7 @@ module "vms_single" {
   depends_on = [module.single_networking]
 }
 
-# Virtual Machines (Hub-Spoke mode - deployed in spoke subscription)
+# Virtual Machines (Hub-Spoke mode - deployed across multiple spokes)
 module "vms_spoke" {
   for_each = var.architecture_mode == "hub-spoke" && var.deploy_components.vms ? var.virtual_machines : {}
   source = "./modules/azure-vm"
@@ -206,7 +221,22 @@ module "vms_spoke" {
   vm_name        = each.key
   admin_username = each.value.admin_username != null ? each.value.admin_username : var.admin_username
   admin_password = each.value.admin_password != null ? each.value.admin_password : var.admin_password
-  subnet_id      = local.vm_vnet_subnet_ids[each.value.subnet_name]
+  
+  # Determine subnet ID based on spoke_name and subnet_name
+  subnet_id = each.value.spoke_name != null ? (
+    # If spoke_name is specified, look for subnet in that specific spoke
+    contains(keys(module.spoke_networking), each.value.spoke_name) ? 
+      module.spoke_networking[each.value.spoke_name].subnet_ids[each.value.subnet_name] :
+      # Fallback to hub if spoke not found and subnet exists in hub
+      (length(module.hub_networking) > 0 && contains(keys(module.hub_networking[0].subnet_ids), each.value.subnet_name) ?
+        module.hub_networking[0].subnet_ids[each.value.subnet_name] :
+        null
+      )
+  ) : (
+    # If no spoke_name specified, use backward compatibility logic
+    length(module.spoke_networking) > 0 ? values(module.spoke_networking)[0].subnet_ids[each.value.subnet_name] :
+    (length(module.hub_networking) > 0 ? module.hub_networking[0].subnet_ids[each.value.subnet_name] : null)
+  )
 
   # Optional variables
   vm_size          = each.value.vm_size
@@ -222,7 +252,7 @@ module "vms_spoke" {
   # NSG configuration
   nsg_rules = each.value.nsg_rules
 
-  depends_on = [module.spoke_networking]
+  depends_on = [module.spoke_networking, module.hub_networking]
 }
 
 # VPN Gateway and connection (Single VNet mode)

@@ -54,6 +54,7 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-app", "subnet-data", "subnet-mgmt"]
     peer_to_hub        = true
+    spoke_name          = "workload"  # Uses subscriptions.spoke["workload"]
   }
   # Example of additional spoke (disabled by default)
   # "dmz" = {
@@ -64,6 +65,7 @@ spoke_vnets = {
   #   location           = "West Europe"
   #   subnets            = ["subnet-web", "subnet-lb"]
   #   peer_to_hub        = true
+  #   spoke_name          = "dmz"  # Uses subscriptions.spoke["dmz"]
   # }
 }
 
@@ -105,6 +107,7 @@ virtual_machines = {
     resource_group_name = "rg-workload-app"
     enable_public_ip    = false              # Private VM in spoke
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "workload"         # Deploy to workload spoke
     # No NSG rules needed for private VM
   }
   "data-vm-01" = {
@@ -113,6 +116,7 @@ virtual_machines = {
     resource_group_name = "rg-workload-data"
     enable_public_ip    = false              # Private VM in spoke
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "workload"         # Deploy to workload spoke
     # No NSG rules needed for private VM
   }
   "mgmt-vm-01" = {
@@ -121,6 +125,7 @@ virtual_machines = {
     resource_group_name = "rg-workload-mgmt"
     enable_public_ip    = true               # Management VM with public access
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "workload"         # Deploy to workload spoke
     nsg_rules = [
       {
         name                       = "AllowRDP"

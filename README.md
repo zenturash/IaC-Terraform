@@ -121,6 +121,7 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-app", "subnet-data", "subnet-mgmt"]
     peer_to_hub        = true
+    spoke_name          = "workload"  # Uses subscriptions.spoke["workload"]
   }
   "dmz" = {
     enabled             = true
@@ -130,6 +131,7 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-web", "subnet-lb"]
     peer_to_hub        = true
+    spoke_name          = "dmz"  # Uses subscriptions.spoke["dmz"]
   }
 }
 ```
@@ -148,23 +150,38 @@ vnet_peering = {
 
 ## 🖥️ Virtual Machine Configuration
 
-VMs are deployed in the appropriate network tier based on architecture:
+VMs can be deployed across multiple spokes using the `spoke_name` parameter:
 
 ```hcl
 virtual_machines = {
-  "app-vm-01" = {
+  # Production VM in production spoke
+  "prod-web-01" = {
     vm_size             = "Standard_D2s_v3"
-    subnet_name         = "subnet-app"        # Deployed in spoke (ALZ) or single VNet
-    resource_group_name = "rg-workload-app"
+    subnet_name         = "subnet-web"
+    resource_group_name = "rg-prod-web"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "production"       # Deploy to production spoke
   }
+  
+  # Development VM in development spoke
+  "dev-app-01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "subnet-dev-app"
+    resource_group_name = "rg-dev-app"
+    enable_public_ip    = false
+    os_disk_type        = "Standard_LRS"
+    spoke_name          = "development"      # Deploy to development spoke
+  }
+  
+  # Management VM in hub (no spoke_name = hub deployment)
   "mgmt-vm-01" = {
     vm_size             = "Standard_B2s"
-    subnet_name         = "subnet-mgmt"
-    resource_group_name = "rg-workload-mgmt"
+    subnet_name         = "ManagementSubnet"
+    resource_group_name = "rg-hub-mgmt"
     enable_public_ip    = true               # Management access
     os_disk_type        = "Premium_LRS"
+    spoke_name          = null               # Deploy to hub VNet
     nsg_rules = [
       {
         name                       = "AllowRDP"
@@ -178,6 +195,21 @@ virtual_machines = {
         destination_address_prefix = "*"
       }
     ]
+  }
+}
+```
+
+### Multi-Subscription Configuration
+
+Configure subscriptions for hub and spokes:
+
+```hcl
+subscriptions = {
+  hub = "hub-subscription-id"              # Hub/Connectivity subscription
+  spoke = {
+    "production"  = "prod-subscription-id"  # Production workload subscription
+    "development" = "dev-subscription-id"   # Development subscription
+    "dmz"         = "dmz-subscription-id"   # DMZ/Security subscription
   }
 }
 ```

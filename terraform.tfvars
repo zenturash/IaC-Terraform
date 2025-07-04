@@ -44,6 +44,7 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-test", "subnet-app"]
     peer_to_hub        = true
+    spoke_name          = "test-workload"  # Uses subscriptions.spoke["test-workload"]
   }
 }
 
@@ -57,7 +58,7 @@ vnet_peering = {
 }
 
 # VPN Configuration (Disabled for initial test)
-enable_vpn = false
+enable_vpn = true
 vpn_configuration = {
   vpn_gateway_name = "vpn-gateway-test"
   vpn_gateway_sku  = "Basic"              # Cost-effective for testing
@@ -85,6 +86,7 @@ virtual_machines = {
     resource_group_name = "rg-test-vm"
     enable_public_ip    = true                  # Enable for easy testing access
     os_disk_type        = "Standard_LRS"        # Cost-effective storage for testing
+    spoke_name          = "test-workload"       # Deploy to test-workload spoke
     nsg_rules = [
       {
         name                       = "AllowRDP"

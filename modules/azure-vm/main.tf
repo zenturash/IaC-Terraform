@@ -1,10 +1,3 @@
-# Generate random suffix for resource group to avoid naming conflicts
-resource "random_string" "suffix" {
-  length  = 4
-  special = false
-  upper   = false
-}
-
 # Local values for consistent tagging and naming
 locals {
   common_tags = {
@@ -15,13 +8,11 @@ locals {
     environment     = "POC"
     project         = "Azure VM POC"
   }
-  
-  resource_group_name = "${var.resource_group_name}-${random_string.suffix.result}"
 }
 
 # Resource Group
 resource "azurerm_resource_group" "main" {
-  name     = local.resource_group_name
+  name     = var.resource_group_name
   location = var.location
   tags     = local.common_tags
 }

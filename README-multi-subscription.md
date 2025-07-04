@@ -17,24 +17,28 @@ This document explains how to deploy the Azure Landing Zone (ALZ) across multipl
 ## 🔧 Configuration
 
 ### Subscription Configuration
-Configure the subscription IDs in your `terraform.tfvars` file:
+Configure the subscription IDs in your `terraform.tfvars` file using the new clean model:
 
 ```hcl
 # Multi-Subscription Configuration
 subscriptions = {
-  hub_subscription_id   = "12345678-1234-1234-1234-123456789abc"    # Connectivity subscription
-  spoke_subscription_id = "87654321-4321-4321-4321-cba987654321"    # Workload subscription
+  hub = "12345678-1234-1234-1234-123456789abc"    # Hub/Connectivity subscription
+  spoke = {
+    "production"  = "87654321-4321-4321-4321-cba987654321"    # Production workload subscription
+    "development" = "11111111-2222-3333-4444-555555555555"    # Development subscription
+    "dmz"         = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"    # DMZ/Security subscription
+  }
 }
 ```
 
 ### Single Subscription Deployment
-For single subscription deployment, leave both values as `null`:
+For single subscription deployment, leave hub as `null` and spoke as empty:
 
 ```hcl
 # Single Subscription Configuration
 subscriptions = {
-  hub_subscription_id   = null  # Uses default authenticated subscription
-  spoke_subscription_id = null  # Uses default authenticated subscription
+  hub = null  # Uses default authenticated subscription
+  spoke = {}  # No additional spoke subscriptions
 }
 ```
 
@@ -62,7 +66,7 @@ hub_vnet = {
   subnets            = ["GatewaySubnet", "AzureFirewallSubnet", "ManagementSubnet"]
 }
 
-# Spoke VNet (deployed in workload subscription)
+# Spoke VNets (deployed across multiple subscriptions)
 spoke_vnets = {
   "production" = {
     enabled             = true
@@ -72,6 +76,17 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-web", "subnet-app", "subnet-db"]
     peer_to_hub        = true
+    spoke_name          = "production"       # Uses subscriptions.spoke["production"]
+  }
+  "development" = {
+    enabled             = true
+    name               = "vnet-spoke-development"
+    resource_group_name = "rg-spoke-development"
+    cidr               = "10.3.0.0/20"
+    location           = "West Europe"
+    subnets            = ["subnet-dev-web", "subnet-dev-app"]
+    peer_to_hub        = true
+    spoke_name          = "development"      # Uses subscriptions.spoke["development"]
   }
 }
 
@@ -82,14 +97,36 @@ deploy_components = {
   peering     = true   # Cross-subscription peering
 }
 
-# VMs (deployed in workload subscription)
+# VMs (deployed across multiple spokes)
 virtual_machines = {
-  "web-vm-01" = {
+  # Production VM in production spoke
+  "prod-web-01" = {
     vm_size             = "Standard_D2s_v3"
     subnet_name         = "subnet-web"
     resource_group_name = "rg-production-web"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "production"       # Deploy to production spoke
+  }
+  
+  # Development VM in development spoke
+  "dev-app-01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "subnet-dev-app"
+    resource_group_name = "rg-dev-app"
+    enable_public_ip    = false
+    os_disk_type        = "Standard_LRS"
+    spoke_name          = "development"      # Deploy to development spoke
+  }
+  
+  # Management VM in hub
+  "mgmt-vm-01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "ManagementSubnet"
+    resource_group_name = "rg-hub-mgmt"
+    enable_public_ip    = true
+    os_disk_type        = "Premium_LRS"
+    spoke_name          = null               # Deploy to hub (no spoke_name)
   }
 }
 ```

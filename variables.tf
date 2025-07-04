@@ -29,6 +29,7 @@ variable "virtual_machines" {
     os_disk_type        = optional(string, "Premium_LRS")
     admin_username      = optional(string)
     admin_password      = optional(string)
+    spoke_name          = optional(string)  # Which spoke to deploy to (hub-spoke mode only)
     nsg_rules = optional(list(object({
       name                       = string
       priority                   = number
@@ -160,7 +161,7 @@ variable "spoke_vnets" {
     location           = optional(string)
     subnets            = list(string)
     peer_to_hub        = optional(bool, true)
-    subscription_id     = optional(string)  # If null, uses spoke_subscription_id from subscriptions variable
+    spoke_name          = optional(string)  # Which subscription from subscriptions.spoke to use (defaults to VNet key name)
   }))
   default = {}
 }

@@ -48,7 +48,7 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-web", "subnet-app", "subnet-db"]
     peer_to_hub        = true
-    subscription_id    = null  # Uses spoke_subscription_id from subscriptions
+    spoke_name          = "production"  # Uses subscriptions.spoke["production"]
   }
   
   # Second spoke in same workload subscription
@@ -60,7 +60,7 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-dev-web", "subnet-dev-app"]
     peer_to_hub        = true
-    subscription_id    = null  # Uses spoke_subscription_id from subscriptions
+    spoke_name          = "development"  # Uses subscriptions.spoke["development"]
   }
   
   # Third spoke in different subscription (DMZ/Security)
@@ -74,7 +74,7 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-dmz-web", "subnet-dmz-lb"]
     peer_to_hub        = true
-    subscription_id    = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Different subscription
+    spoke_name          = "dmz"  # Uses subscriptions.spoke["dmz"]
   }
 }
 
@@ -117,6 +117,7 @@ virtual_machines = {
     resource_group_name = "rg-prod-web"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "production"  # Deploy to production spoke
   }
   "prod-app-01" = {
     vm_size             = "Standard_D4s_v3"
@@ -124,6 +125,7 @@ virtual_machines = {
     resource_group_name = "rg-prod-app"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "production"  # Deploy to production spoke
   }
   
   # Development VMs in development spoke
@@ -133,15 +135,17 @@ virtual_machines = {
     resource_group_name = "rg-dev-web"
     enable_public_ip    = false
     os_disk_type        = "Standard_LRS"
+    spoke_name          = "development"  # Deploy to development spoke
   }
   
-  # Management VM with public access
+  # Management VM with public access (in hub)
   "mgmt-vm-01" = {
     vm_size             = "Standard_B2s"
     subnet_name         = "ManagementSubnet"  # In hub VNet
     resource_group_name = "rg-hub-mgmt"
     enable_public_ip    = true
     os_disk_type        = "Premium_LRS"
+    spoke_name          = null  # Deploy to hub (no spoke_name specified)
     nsg_rules = [
       {
         name                       = "AllowRDP"

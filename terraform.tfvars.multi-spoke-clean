@@ -38,7 +38,7 @@ hub_vnet = {
 
 # Multiple Spoke VNets Configuration
 spoke_vnets = {
-  # Production spoke - uses subscription from subscriptions.spoke["production"]
+  # Production spoke - automatically uses subscription from subscriptions.spoke["production"]
   "production" = {
     enabled             = true
     name               = "vnet-spoke-production"
@@ -47,10 +47,10 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-web", "subnet-app", "subnet-db"]
     peer_to_hub        = true
-    subscription_id    = null  # Will use subscriptions.spoke["production"]
+    spoke_name          = "production"  # Uses subscriptions.spoke["production"]
   }
   
-  # Development spoke - uses subscription from subscriptions.spoke["development"]
+  # Development spoke - automatically uses subscription from subscriptions.spoke["development"]
   "development" = {
     enabled             = true
     name               = "vnet-spoke-development"
@@ -59,10 +59,10 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-dev-web", "subnet-dev-app"]
     peer_to_hub        = true
-    subscription_id    = null  # Will use subscriptions.spoke["development"]
+    spoke_name          = "development"  # Uses subscriptions.spoke["development"]
   }
   
-  # DMZ spoke - uses subscription from subscriptions.spoke["dmz"]
+  # DMZ spoke - automatically uses subscription from subscriptions.spoke["dmz"]
   "dmz" = {
     enabled             = false  # Enable when you have the DMZ subscription
     name               = "vnet-spoke-dmz"
@@ -71,7 +71,7 @@ spoke_vnets = {
     location           = "West Europe"
     subnets            = ["subnet-dmz-web", "subnet-dmz-lb"]
     peer_to_hub        = true
-    subscription_id    = null  # Will use subscriptions.spoke["dmz"]
+    spoke_name          = "dmz"  # Uses subscriptions.spoke["dmz"]
   }
 }
 
@@ -114,6 +114,7 @@ virtual_machines = {
     resource_group_name = "rg-prod-web"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "production"  # Deploy to production spoke
   }
   "prod-app-01" = {
     vm_size             = "Standard_D4s_v3"
@@ -121,6 +122,7 @@ virtual_machines = {
     resource_group_name = "rg-prod-app"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
+    spoke_name          = "production"  # Deploy to production spoke
   }
   
   # Development VMs in development spoke
@@ -130,15 +132,25 @@ virtual_machines = {
     resource_group_name = "rg-dev-web"
     enable_public_ip    = false
     os_disk_type        = "Standard_LRS"
+    spoke_name          = "development"  # Deploy to development spoke
+  }
+  "dev-app-01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "subnet-dev-app"
+    resource_group_name = "rg-dev-app"
+    enable_public_ip    = false
+    os_disk_type        = "Standard_LRS"
+    spoke_name          = "development"  # Deploy to development spoke
   }
   
-  # Management VM in hub
+  # Management VM in hub (no spoke_name = deploys to hub)
   "mgmt-vm-01" = {
     vm_size             = "Standard_B2s"
     subnet_name         = "ManagementSubnet"  # In hub VNet
     resource_group_name = "rg-hub-mgmt"
     enable_public_ip    = true
     os_disk_type        = "Premium_LRS"
+    spoke_name          = null  # Deploy to hub (or omit spoke_name entirely)
     nsg_rules = [
       {
         name                       = "AllowRDP"

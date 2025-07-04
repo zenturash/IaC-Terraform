@@ -52,6 +52,7 @@ virtual_machines = {
     resource_group_name = "rg-poc"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
+    spoke_name          = null  # Not used in single-vnet mode
     # No NSG rules needed for private VM
   }
   "app-01" = {
@@ -60,6 +61,7 @@ virtual_machines = {
     resource_group_name = "rg-app"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
+    spoke_name          = null  # Not used in single-vnet mode
     # No NSG rules needed for private VM
   }
   "mgmt-vm-01" = {
@@ -68,6 +70,7 @@ virtual_machines = {
     resource_group_name = "rg-management"
     enable_public_ip    = true
     os_disk_type        = "Premium_LRS"
+    spoke_name          = null  # Not used in single-vnet mode
     nsg_rules = [
       {
         name                       = "AllowRDP"

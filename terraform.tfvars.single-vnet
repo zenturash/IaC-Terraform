@@ -11,8 +11,8 @@ location       = "West Europe"
 
 # Subscription Configuration (Single subscription for all resources)
 subscriptions = {
-  hub_subscription_id   = null  # Not used in single-vnet mode
-  spoke_subscription_id = null  # Not used in single-vnet mode
+  hub = null  # Not used in single-vnet mode
+  spoke = {}  # Not used in single-vnet mode
 }
 
 # Component Deployment Control
@@ -22,14 +22,6 @@ deploy_components = {
   peering     = false  # No peering in single VNet mode
 }
 
-# Network configuration (Single VNet)
-vnet_cidr = "10.0.0.0/20"
-
-# Define subnet names - CIDRs will be automatically calculated
-subnet_names = ["subnet-poc", "subnet-app", "subnet-mgmt"]
-
-# Create a gateway subnet for VPN/ExpressRoute
-create_gateway_subnet = true
 
 # VPN Configuration - Basic Setup
 enable_vpn = true
@@ -52,11 +44,11 @@ vpn_configuration = {
   }
 }
 
-# Define virtual machines
+# Define virtual machines (using hardcoded subnet names from main.tf)
 virtual_machines = {
   "poc-vm01" = {
     vm_size             = "Standard_B2s"
-    subnet_name         = "subnet-poc"
+    subnet_name         = "subnet-default"  # Matches hardcoded subnet in main.tf
     resource_group_name = "rg-poc"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
@@ -64,7 +56,7 @@ virtual_machines = {
   }
   "app-01" = {
     vm_size             = "Standard_D2s_v3"
-    subnet_name         = "subnet-app"
+    subnet_name         = "subnet-app"      # Matches hardcoded subnet in main.tf
     resource_group_name = "rg-app"
     enable_public_ip    = false
     os_disk_type        = "Premium_LRS"
@@ -72,7 +64,7 @@ virtual_machines = {
   }
   "mgmt-vm-01" = {
     vm_size             = "Standard_B2s"
-    subnet_name         = "subnet-mgmt"
+    subnet_name         = "subnet-mgmt"     # Matches hardcoded subnet in main.tf
     resource_group_name = "rg-management"
     enable_public_ip    = true
     os_disk_type        = "Premium_LRS"

@@ -1,0 +1,200 @@
+# Multi-Spoke ALZ Configuration with Clean Subscription Model
+# This shows how to deploy multiple spokes across different subscriptions
+
+# Architecture Mode - Enable ALZ Hub-Spoke
+architecture_mode = "hub-spoke"
+
+# Global settings
+admin_username = "azureuser"
+admin_password = "ComplexPassword123!"
+location       = "West Europe"
+
+# Clean Multi-Subscription Configuration
+subscriptions = {
+  hub = "52bc998c-51a4-40fa-be04-26774b4c5f0e"    # Hub/Connectivity subscription
+  spoke = {
+    "production"  = "caaf1a53-3a0a-42e4-9688-4aac8f95a2d7"    # Production workload subscription
+    "development" = "caaf1a53-3a0a-42e4-9688-4aac8f95a2d7"    # Development in same subscription as prod
+    "dmz"         = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"    # DMZ in separate security subscription
+  }
+}
+
+# Component Deployment Control
+deploy_components = {
+  vpn_gateway = true   # Deploy VPN Gateway in hub
+  vms         = true   # Deploy VMs in spokes
+  peering     = true   # Enable cross-subscription VNet peering
+}
+
+# Hub VNet Configuration (Deployed in Hub Subscription)
+hub_vnet = {
+  enabled             = true
+  name               = "vnet-hub-connectivity"
+  resource_group_name = "rg-hub-connectivity"
+  cidr               = "10.1.0.0/20"
+  location           = "West Europe"
+  subnets            = ["GatewaySubnet", "AzureFirewallSubnet", "ManagementSubnet"]
+}
+
+# Multiple Spoke VNets Configuration
+spoke_vnets = {
+  # Production spoke - uses subscription from subscriptions.spoke["production"]
+  "production" = {
+    enabled             = true
+    name               = "vnet-spoke-production"
+    resource_group_name = "rg-spoke-production"
+    cidr               = "10.2.0.0/20"
+    location           = "West Europe"
+    subnets            = ["subnet-web", "subnet-app", "subnet-db"]
+    peer_to_hub        = true
+    subscription_id    = null  # Will use subscriptions.spoke["production"]
+  }
+  
+  # Development spoke - uses subscription from subscriptions.spoke["development"]
+  "development" = {
+    enabled             = true
+    name               = "vnet-spoke-development"
+    resource_group_name = "rg-spoke-development"
+    cidr               = "10.3.0.0/20"
+    location           = "West Europe"
+    subnets            = ["subnet-dev-web", "subnet-dev-app"]
+    peer_to_hub        = true
+    subscription_id    = null  # Will use subscriptions.spoke["development"]
+  }
+  
+  # DMZ spoke - uses subscription from subscriptions.spoke["dmz"]
+  "dmz" = {
+    enabled             = false  # Enable when you have the DMZ subscription
+    name               = "vnet-spoke-dmz"
+    resource_group_name = "rg-spoke-dmz"
+    cidr               = "10.4.0.0/20"
+    location           = "West Europe"
+    subnets            = ["subnet-dmz-web", "subnet-dmz-lb"]
+    peer_to_hub        = true
+    subscription_id    = null  # Will use subscriptions.spoke["dmz"]
+  }
+}
+
+# VNet Peering Configuration - All spokes automatically peer to hub
+vnet_peering = {
+  enabled                    = true
+  allow_virtual_network_access = true
+  allow_forwarded_traffic    = true
+  allow_gateway_transit      = true   # Hub provides gateway
+  use_remote_gateways        = true   # Spokes use hub gateway
+}
+
+# VPN Configuration (Deployed in Hub)
+enable_vpn = true
+vpn_configuration = {
+  vpn_gateway_name = "vpn-gateway-hub"
+  vpn_gateway_sku  = "VpnGw1"
+  vpn_type         = "RouteBased"
+  enable_bgp       = false
+  
+  local_network_gateway = {
+    name            = "local-gateway-office"
+    gateway_address = "203.0.113.12"           # Replace with YOUR actual public IP
+    address_space   = ["192.168.0.0/16"]       # Replace with YOUR on-premises networks
+  }
+  
+  vpn_connection = {
+    name                = "vpn-connection-hub"
+    shared_key          = "YourSecureSharedKey123!"
+    connection_protocol = "IKEv2"
+  }
+}
+
+# Virtual Machines across multiple spokes
+virtual_machines = {
+  # Production VMs in production spoke
+  "prod-web-01" = {
+    vm_size             = "Standard_D2s_v3"
+    subnet_name         = "subnet-web"
+    resource_group_name = "rg-prod-web"
+    enable_public_ip    = false
+    os_disk_type        = "Premium_LRS"
+  }
+  "prod-app-01" = {
+    vm_size             = "Standard_D4s_v3"
+    subnet_name         = "subnet-app"
+    resource_group_name = "rg-prod-app"
+    enable_public_ip    = false
+    os_disk_type        = "Premium_LRS"
+  }
+  
+  # Development VMs in development spoke
+  "dev-web-01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "subnet-dev-web"
+    resource_group_name = "rg-dev-web"
+    enable_public_ip    = false
+    os_disk_type        = "Standard_LRS"
+  }
+  
+  # Management VM in hub
+  "mgmt-vm-01" = {
+    vm_size             = "Standard_B2s"
+    subnet_name         = "ManagementSubnet"  # In hub VNet
+    resource_group_name = "rg-hub-mgmt"
+    enable_public_ip    = true
+    os_disk_type        = "Premium_LRS"
+    nsg_rules = [
+      {
+        name                       = "AllowRDP"
+        priority                   = 1000
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "3389"
+        source_address_prefix      = "93.161.18.8/32"  # Your IP
+        destination_address_prefix = "*"
+      }
+    ]
+  }
+}
+
+# ========================================
+# MULTI-SPOKE DEPLOYMENT GUIDE
+# ========================================
+#
+# How to Add a Second Spoke:
+# 1. Add subscription to subscriptions.spoke map:
+#    "new-spoke" = "subscription-id-here"
+#
+# 2. Add spoke configuration to spoke_vnets:
+#    "new-spoke" = {
+#      enabled             = true
+#      name               = "vnet-spoke-new"
+#      resource_group_name = "rg-spoke-new"
+#      cidr               = "10.5.0.0/20"  # Use next available CIDR
+#      location           = "West Europe"
+#      subnets            = ["subnet-new-app", "subnet-new-data"]
+#      peer_to_hub        = true
+#      subscription_id    = null  # Uses subscriptions.spoke["new-spoke"]
+#    }
+#
+# 3. Optionally add VMs in the new spoke:
+#    "new-vm-01" = {
+#      vm_size             = "Standard_B2s"
+#      subnet_name         = "subnet-new-app"
+#      resource_group_name = "rg-new-vm"
+#      enable_public_ip    = false
+#      os_disk_type        = "Standard_LRS"
+#    }
+#
+# What Happens Automatically:
+# - New spoke VNet is created in specified subscription
+# - Bidirectional peering is established between hub and new spoke
+# - VMs in new spoke can communicate with hub and other spokes
+# - New spoke can use hub's VPN Gateway for on-premises connectivity
+#
+# Benefits of This Approach:
+# - Clean subscription mapping
+# - No redundant default_spoke_subscription_id
+# - Each spoke can be in its own subscription
+# - Automatic peering for all enabled spokes
+# - Centralized VPN connectivity through hub
+#
+# ========================================

@@ -56,29 +56,6 @@ variable "virtual_machines" {
   }
 }
 
-variable "vnet_cidr" {
-  description = "CIDR block for the virtual network"
-  type        = string
-  default     = "10.0.0.0/20"
-}
-
-variable "subnet_cidr" {
-  description = "CIDR block for the subnet (deprecated - use subnets variable)"
-  type        = string
-  default     = "10.0.1.0/24"
-}
-
-variable "subnet_names" {
-  description = "List of subnet names to create. CIDRs will be automatically calculated"
-  type        = list(string)
-  default     = ["subnet-poc", "subnet-app", "subnet-mgmt"]
-}
-
-variable "create_gateway_subnet" {
-  description = "Whether to create a GatewaySubnet (for VPN/ExpressRoute gateways)"
-  type        = bool
-  default     = false
-}
 
 # VPN Configuration
 variable "enable_vpn" {
@@ -144,12 +121,12 @@ variable "architecture_mode" {
 variable "subscriptions" {
   description = "Azure subscription configuration for multi-subscription deployments"
   type = object({
-    hub_subscription_id   = optional(string)  # If null, uses default subscription
-    spoke_subscription_id = optional(string)  # If null, uses default subscription
+    hub   = optional(string)  # Hub/Connectivity subscription ID. If null, uses default subscription
+    spoke = optional(map(string), {})  # Map of spoke names to subscription IDs: { "prod" = "sub-id", "dev" = "sub-id" }
   })
   default = {
-    hub_subscription_id   = null
-    spoke_subscription_id = null
+    hub   = null
+    spoke = {}
   }
 }
 
@@ -183,6 +160,7 @@ variable "spoke_vnets" {
     location           = optional(string)
     subnets            = list(string)
     peer_to_hub        = optional(bool, true)
+    subscription_id     = optional(string)  # If null, uses spoke_subscription_id from subscriptions variable
   }))
   default = {}
 }

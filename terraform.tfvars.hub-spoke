@@ -12,14 +12,19 @@ location       = "West Europe"
 # Subscription Configuration (Multi-Subscription ALZ)
 # Leave null to use the same subscription for both hub and spoke
 subscriptions = {
-  hub_subscription_id   = null  # Replace with hub subscription ID if different
-  spoke_subscription_id = null  # Replace with spoke subscription ID if different
+  hub = null  # Replace with hub subscription ID if different
+  spoke = {
+    "workload" = null  # Replace with workload subscription ID if different
+  }
 }
 
 # Example for multi-subscription deployment:
 # subscriptions = {
-#   hub_subscription_id   = "12345678-1234-1234-1234-123456789abc"    # Connectivity subscription
-#   spoke_subscription_id = "87654321-4321-4321-4321-cba987654321"    # Workload subscription
+#   hub = "12345678-1234-1234-1234-123456789abc"    # Connectivity subscription
+#   spoke = {
+#     "workload" = "87654321-4321-4321-4321-cba987654321"    # Workload subscription
+#     "dmz"      = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"    # DMZ subscription
+#   }
 # }
 
 # Component Deployment Control
@@ -132,10 +137,6 @@ virtual_machines = {
   }
 }
 
-# Legacy variables (not used in hub-spoke mode but kept for compatibility)
-vnet_cidr = "10.0.0.0/20"  # Not used in hub-spoke mode
-subnet_names = ["subnet-legacy"]  # Not used in hub-spoke mode
-create_gateway_subnet = false  # Not used in hub-spoke mode
 
 # Deployment Notes:
 # 1. VPN Gateway will be deployed in the hub VNet

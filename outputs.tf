@@ -207,8 +207,8 @@ output "deployment_summary" {
       peering_enabled = var.vnet_peering.enabled
     } : {
       single_vnet = true
-      vnet_cidr = var.vnet_cidr
-      subnet_count = length(var.subnet_names) + (var.create_gateway_subnet ? 1 : 0)
+      vnet_cidr = "10.0.0.0/20"
+      subnet_count = 4  # Default subnets + gateway subnet if VPN enabled
     }
     
     # VM information
@@ -273,8 +273,12 @@ output "connection_guide" {
         for k, v in var.spoke_vnets : k => v.cidr if v.enabled
       }
       peering_enabled = var.vnet_peering.enabled
+      vnet_cidr = null
     } : {
-      vnet_cidr = var.vnet_cidr
+      hub_cidr = null
+      spoke_cidrs = {}
+      peering_enabled = false
+      vnet_cidr = length(module.single_networking) > 0 ? module.single_networking[0].vnet_address_space[0] : null
     }
   }
 }

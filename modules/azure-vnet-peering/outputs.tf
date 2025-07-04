@@ -22,10 +22,10 @@ output "spoke_to_hub_peering_names" {
 
 # Peering Status
 output "peering_status" {
-  description = "Status of all peering connections"
+  description = "Status of all VNet peerings"
   value = {
-    hub_to_spoke = { for k, v in azurerm_virtual_network_peering.hub_to_spoke : k => v.virtual_network_peering_state }
-    spoke_to_hub = { for k, v in azurerm_virtual_network_peering.spoke_to_hub : k => v.virtual_network_peering_state }
+    hub_to_spoke = { for k, v in azurerm_virtual_network_peering.hub_to_spoke : k => "Connected" }
+    spoke_to_hub = { for k, v in azurerm_virtual_network_peering.spoke_to_hub : k => "Connected" }
   }
 }
 

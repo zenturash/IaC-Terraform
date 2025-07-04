@@ -19,15 +19,15 @@ provider "azurerm" {
 # Configure Azure Provider for Hub Subscription (if different)
 provider "azurerm" {
   alias           = "hub"
-  subscription_id = var.subscriptions.hub_subscription_id
+  subscription_id = var.subscriptions.hub
   features {}
   skip_provider_registration = true
 }
 
-# Configure Azure Provider for Spoke Subscription (if different)
+# Configure Azure Provider for Spoke Subscription (default)
 provider "azurerm" {
   alias           = "spoke"
-  subscription_id = var.subscriptions.spoke_subscription_id
+  subscription_id = length(var.subscriptions.spoke) > 0 ? values(var.subscriptions.spoke)[0] : null
   features {}
   skip_provider_registration = true
 }
@@ -61,14 +61,14 @@ module "single_networking" {
   count  = var.architecture_mode == "single-vnet" ? 1 : 0
   source = "./modules/azure-networking"
 
-  vnet_name           = "vnet-multi-vm"
-  resource_group_name = "rg-networking-multi-vm"
+  vnet_name           = "vnet-single-legacy"
+  resource_group_name = "rg-networking-single"
   location            = var.location
-  vnet_cidr           = var.vnet_cidr
+  vnet_cidr           = "10.0.0.0/20"
   
-  # Use configurable subnet names - CIDRs calculated automatically
-  subnet_names = var.subnet_names
-  create_gateway_subnet = var.create_gateway_subnet || var.enable_vpn
+  # Use default subnet names for single-vnet mode
+  subnet_names = ["subnet-default", "subnet-app", "subnet-mgmt"]
+  create_gateway_subnet = var.enable_vpn
   
   tags = merge(local.common_tags, {
     tier = "networking-single"
@@ -122,6 +122,7 @@ module "spoke_networking" {
     tier = "networking-spoke"
     role = "workload"
     spoke_name = each.key
+    subscription_id = each.value.subscription_id != null ? each.value.subscription_id : lookup(var.subscriptions.spoke, each.key, null)
   })
 }
 

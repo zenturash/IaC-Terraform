@@ -235,6 +235,7 @@ output "deployment_summary" {
 # Quick Connection Guide
 output "connection_guide" {
   description = "Quick guide for connecting to resources"
+  sensitive   = true
   value = {
     architecture = var.architecture_mode
     

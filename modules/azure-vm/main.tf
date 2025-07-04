@@ -1,13 +1,11 @@
 # Local values for consistent tagging and naming
 locals {
-  common_tags = {
-    creation_date    = formatdate("YYYY-MM-DD", timestamp())
-    creation_method  = "OpenTofu"
-    os_type         = "Windows Server 2025"
-    vm_size         = var.vm_size
-    environment     = "POC"
-    project         = "Azure VM POC"
-  }
+  # Merge passed-in tags with VM-specific tags
+  common_tags = merge(var.tags, {
+    os_type = "Windows Server 2025"
+    vm_size = var.vm_size
+    vm_name = var.vm_name
+  })
 }
 
 # Resource Group

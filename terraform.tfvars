@@ -9,6 +9,15 @@ admin_username = "azureuser"
 admin_password = "ComplexPassword123!"
 location       = "West Europe"
 
+# Global Tags - Applied to all resources
+global_tags = {
+  environment     = "Test"
+  project         = "Azure ALZ Multi-Subscription Test"
+  creation_method = "OpenTofu"
+  owner           = "Infrastructure Team"
+  cost_center     = "IT-001"
+}
+
 # Multi-Subscription Configuration - YOUR SPECIFIC SUBSCRIPTIONS
 subscriptions = {
   hub = "52bc998c-51a4-40fa-be04-26774b4c5f0e"    # Hub/Connectivity subscription

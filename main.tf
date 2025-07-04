@@ -34,12 +34,10 @@ provider "azurerm" {
 
 # Local values for common tags and configuration
 locals {
-  common_tags = {
-    creation_date   = formatdate("YYYY-MM-DD", timestamp())
-    creation_method = "OpenTofu"
-    environment     = "POC"
-    project         = "Azure ALZ POC"
-  }
+  # Merge global tags with automatic tags
+  common_tags = merge(var.global_tags, {
+    creation_date = formatdate("YYYY-MM-DD", timestamp())
+  })
   
   # Determine which VNet to use for VMs based on architecture mode
   vm_vnet_subnet_ids = var.architecture_mode == "hub-spoke" ? (
@@ -205,6 +203,12 @@ module "vms_single" {
   # NSG configuration
   nsg_rules = each.value.nsg_rules
 
+  # Tags configuration
+  tags = merge(local.common_tags, {
+    tier = "vm"
+    architecture = var.architecture_mode
+  })
+
   depends_on = [module.single_networking]
 }
 
@@ -251,6 +255,13 @@ module "vms_spoke" {
   
   # NSG configuration
   nsg_rules = each.value.nsg_rules
+
+  # Tags configuration
+  tags = merge(local.common_tags, {
+    tier = "vm"
+    architecture = var.architecture_mode
+    spoke_name = each.value.spoke_name
+  })
 
   depends_on = [module.spoke_networking, module.hub_networking]
 }

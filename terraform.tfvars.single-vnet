@@ -9,6 +9,16 @@ admin_username = "azureuser"
 admin_password = "ComplexPassword123!"
 location       = "West Europe"
 
+# Global Tags - Applied to all resources
+global_tags = {
+  environment     = "Legacy"
+  project         = "Azure Single VNet POC"
+  creation_method = "OpenTofu"
+  owner           = "Development Team"
+  cost_center     = "IT-DEV-002"
+  business_unit   = "Application Development"
+}
+
 # Subscription Configuration (Single subscription for all resources)
 subscriptions = {
   hub = null  # Not used in single-vnet mode

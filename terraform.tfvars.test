@@ -9,6 +9,16 @@ admin_username = "azureuser"
 admin_password = "ComplexPassword123!"
 location       = "West Europe"
 
+# Global Tags - Applied to all resources
+global_tags = {
+  environment     = "Test"
+  project         = "Azure ALZ Multi-Subscription Test"
+  creation_method = "OpenTofu"
+  owner           = "Infrastructure Team"
+  cost_center     = "IT-TEST-001"
+  business_unit   = "Quality Assurance"
+}
+
 # Multi-Subscription Configuration - YOUR SPECIFIC SUBSCRIPTIONS
 subscriptions = {
   hub = "52bc998c-51a4-40fa-be04-26774b4c5f0e"    # Hub/Connectivity subscription
@@ -57,8 +67,7 @@ vnet_peering = {
   use_remote_gateways        = false  # Spoke doesn't use remote gateways (no VPN deployed yet)
 }
 
-# VPN Configuration (Disabled for initial test)
-enable_vpn = false
+# VPN Configuration (Controlled by deploy_components.vpn_gateway)
 vpn_configuration = {
   vpn_gateway_name = "vpn-gateway-test"
   vpn_gateway_sku  = "Basic"              # Cost-effective for testing
@@ -132,7 +141,6 @@ virtual_machines = {
 #
 # 5. ENABLE VPN (Optional):
 #    Set deploy_components.vpn_gateway = true
-#    Set enable_vpn = true
 #    Update gateway_address with your actual public IP
 #    tofu apply
 #

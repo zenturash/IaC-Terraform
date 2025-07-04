@@ -18,6 +18,17 @@ variable "admin_password" {
   # No default for security - must be provided via terraform.tfvars or command line
 }
 
+# Global Tagging Configuration
+variable "global_tags" {
+  description = "Global tags to apply to all resources"
+  type        = map(string)
+  default = {
+    environment     = "POC"
+    project         = "Azure ALZ POC"
+    creation_method = "OpenTofu"
+  }
+}
+
 # Multiple VMs Configuration
 variable "virtual_machines" {
   description = "Map of virtual machines to create"

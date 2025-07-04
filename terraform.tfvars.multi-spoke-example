@@ -9,6 +9,16 @@ admin_username = "azureuser"
 admin_password = "ComplexPassword123!"
 location       = "West Europe"
 
+# Global Tags - Applied to all resources
+global_tags = {
+  environment     = "Example"
+  project         = "Azure ALZ Multi-Spoke Example"
+  creation_method = "OpenTofu"
+  owner           = "Solutions Architecture Team"
+  cost_center     = "IT-EXAMPLE-001"
+  business_unit   = "Technology Demonstration"
+}
+
 # Multi-Subscription Configuration
 # Hub in connectivity subscription, spokes in various workload subscriptions
 subscriptions = {

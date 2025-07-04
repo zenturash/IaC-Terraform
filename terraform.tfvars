@@ -14,8 +14,8 @@ global_tags = {
   environment     = "Test"
   project         = "Azure ALZ Multi-Subscription Test"
   creation_method = "OpenTofu"
-  owner           = "Infrastructure Team"
-  cost_center     = "IT-001"
+  owner           = "Zentura"
+  cost_center     = "1001"
 }
 
 # Multi-Subscription Configuration - YOUR SPECIFIC SUBSCRIPTIONS

@@ -28,7 +28,7 @@ subscriptions = {
 
 # Component Deployment Control - Test Configuration
 deploy_components = {
-  vpn_gateway = false  # Disable VPN for initial test (can enable later)
+  vpn_gateway = true  # Disable VPN for initial test (can enable later)
   vms         = true   # Deploy test VM in spoke
   peering     = true   # Enable cross-subscription VNet peering
 }

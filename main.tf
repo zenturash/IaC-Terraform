@@ -83,7 +83,7 @@ module "single_networking" {
   
   # Use default subnet names for single-vnet mode
   subnet_names = ["subnet-default", "subnet-app", "subnet-mgmt"]
-  create_gateway_subnet = var.enable_vpn
+  create_gateway_subnet = var.deploy_components.vpn_gateway
   
   tags = merge(local.common_tags, {
     tier = "networking-single"
@@ -257,7 +257,7 @@ module "vms_spoke" {
 
 # VPN Gateway and connection (Single VNet mode)
 module "vpn_single" {
-  count  = var.architecture_mode == "single-vnet" && var.deploy_components.vpn_gateway && var.enable_vpn ? 1 : 0
+  count  = var.architecture_mode == "single-vnet" && var.deploy_components.vpn_gateway ? 1 : 0
   source = "./modules/azure-vpn"
 
   # Required variables

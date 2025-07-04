@@ -87,8 +87,7 @@ vnet_peering = {
   use_remote_gateways        = true   # Spokes use hub gateway
 }
 
-# VPN Configuration (Deployed in Hub)
-enable_vpn = true
+# VPN Configuration (Controlled by deploy_components.vpn_gateway)
 vpn_configuration = {
   vpn_gateway_name = "vpn-gateway-hub"
   vpn_gateway_sku  = "VpnGw1"

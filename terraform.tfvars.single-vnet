@@ -23,8 +23,7 @@ deploy_components = {
 }
 
 
-# VPN Configuration - Basic Setup
-enable_vpn = true
+# VPN Configuration (Controlled by deploy_components.vpn_gateway)
 vpn_configuration = {
   vpn_gateway_name = "vpn-gateway-basic"
   vpn_gateway_sku  = "Basic"              # Most cost-effective for POC

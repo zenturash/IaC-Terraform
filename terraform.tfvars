@@ -57,8 +57,7 @@ vnet_peering = {
   use_remote_gateways        = false  # Spoke doesn't use remote gateways (no VPN deployed yet)
 }
 
-# VPN Configuration (Disabled for initial test)
-enable_vpn = true
+# VPN Configuration (Controlled by deploy_components.vpn_gateway)
 vpn_configuration = {
   vpn_gateway_name = "vpn-gateway-test"
   vpn_gateway_sku  = "Basic"              # Cost-effective for testing
@@ -132,7 +131,6 @@ virtual_machines = {
 #
 # 5. ENABLE VPN (Optional):
 #    Set deploy_components.vpn_gateway = true
-#    Set enable_vpn = true
 #    Update gateway_address with your actual public IP
 #    tofu apply
 #

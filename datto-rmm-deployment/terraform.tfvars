@@ -3,7 +3,7 @@
 
 # Subscription Configuration - Use meaningful names
 subscriptions = {
-  prod   = "caaf1a53-3a0a-42e4-9688-4aac8f95a2d7"  # Replace with your production subscription ID
+  Intern   = "364b17f8-7e33-44f8-95ca-3edd17c67972"  # Replace with your production subscription ID
   # development  = "52bc998c-51a4-40fa-be04-26774b4c5f0e"  # Replace with your development subscription ID
   # management   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Uncomment and add management subscription if needed
   # connectivity = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Uncomment and add connectivity subscription if needed
@@ -12,7 +12,7 @@ subscriptions = {
 
 # Datto RMM Configuration
 datto_rmm_config = {
-  site_guid = "d5792943-c2e4-40b3-84b8-dccac61f4d35"  # Replace with your actual Datto RMM site GUID
+  site_guid = "ff01b552-a4cb-415e-b3c2-c6581a067479"  # Replace with your actual Datto RMM site GUID
 }
 
 # Azure Region
@@ -33,10 +33,10 @@ global_tags = {
 policy_config = {
   production = {
     enabled                 = true
-    policy_name            = "deploy-datto-rmm-agent-production"
-    policy_display_name    = "Deploy Datto RMM Agent on Windows VMs (Production)"
-    assignment_name        = "assign-datto-rmm-agent-production"
-    assignment_display_name = "Assign Datto RMM Agent Policy (Production Environment)"
+    policy_name            = "deploy-datto-rmm-agent-Intern-IT"
+    policy_display_name    = "Deploy Datto RMM Agent on Windows VMs (Intern IT)"
+    assignment_name        = "assign-datto-rmm-agent-Intern-IT"
+    assignment_display_name = "Assign Datto RMM Agent Policy (Intern IT)"
     create_remediation_task = true
   }
   # management = {

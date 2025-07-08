@@ -7,7 +7,7 @@ output "policy_definitions" {
     for k, v in module.datto_rmm_policies : k => {
       policy_id           = v.policy_definition_id
       policy_name         = v.policy_definition_name
-      policy_display_name = v.policy_display_name
+      policy_display_name = v.policy_definition_display_name
     }
   }
 }
@@ -19,7 +19,7 @@ output "policy_assignments" {
       assignment_id           = v.policy_assignment_id
       assignment_name         = v.policy_assignment_name
       assignment_display_name = v.policy_assignment_display_name
-      subscription_id         = v.subscription_id
+      subscription_id         = var.subscriptions[k]
     }
   }
 }
@@ -44,8 +44,8 @@ output "remediation_status" {
   description = "Remediation task status for each subscription"
   value = {
     for k, v in module.datto_rmm_policies : k => {
-      remediation_enabled = v.create_remediation_task
-      subscription_id     = v.subscription_id
+      remediation_enabled = v.configuration_summary.remediation_enabled
+      subscription_id     = var.subscriptions[k]
     }
   }
 }
@@ -55,21 +55,37 @@ output "azure_portal_links" {
   description = "Direct links to Azure Portal for policy management"
   value = {
     for k, v in module.datto_rmm_policies : k => {
-      policy_definition_url = "https://portal.azure.com/#view/Microsoft_Azure_Policy/PolicyDetailBlade/definitionId/${urlencode(v.policy_definition_id)}"
+      policy_definition_url = v.policy_portal_url
       policy_assignment_url = "https://portal.azure.com/#view/Microsoft_Azure_Policy/PolicyAssignmentDetailsBlade/assignmentId/${urlencode(v.policy_assignment_id)}"
       compliance_url        = "https://portal.azure.com/#view/Microsoft_Azure_Policy/PolicyComplianceBlade/assignmentId/${urlencode(v.policy_assignment_id)}"
     }
   }
 }
 
-# PowerShell Commands for Manual Operations
-output "powershell_commands" {
-  description = "PowerShell commands for manual policy operations"
+# Azure CLI Commands for Manual Operations
+output "azure_cli_commands" {
+  description = "Azure CLI commands for manual policy operations"
   value = {
     for k, v in module.datto_rmm_policies : k => {
-      check_compliance = "Get-AzPolicyState -SubscriptionId '${v.subscription_id}' -PolicyAssignmentName '${v.policy_assignment_name}'"
-      trigger_remediation = "Start-AzPolicyRemediation -SubscriptionId '${v.subscription_id}' -PolicyAssignmentId '${v.policy_assignment_id}' -Name 'remediate-datto-rmm-${k}'"
-      check_remediation = "Get-AzPolicyRemediation -SubscriptionId '${v.subscription_id}' -PolicyAssignmentId '${v.policy_assignment_id}'"
+      check_compliance    = v.compliance_check_command
+      trigger_remediation = v.remediation_command
+      check_remediation   = "az policy remediation list --subscription '${var.subscriptions[k]}' --policy-assignment '${v.policy_assignment_name}'"
     }
+  }
+}
+
+# Configuration Summary
+output "configuration_summary" {
+  description = "Complete configuration summary for each subscription"
+  value = {
+    for k, v in module.datto_rmm_policies : k => v.configuration_summary
+  }
+}
+
+# Deployment Status
+output "deployment_status" {
+  description = "Deployment status for each subscription"
+  value = {
+    for k, v in module.datto_rmm_policies : k => v.deployment_status
   }
 }

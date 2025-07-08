@@ -180,14 +180,33 @@ variable "spoke_vnets" {
 variable "deploy_components" {
   description = "Control which components to deploy"
   type = object({
-    vpn_gateway = bool
-    vms         = bool
-    peering     = bool
+    vpn_gateway  = bool
+    vms          = bool
+    peering      = bool
+    datto_policy = bool
   })
   default = {
-    vpn_gateway = false
-    vms         = true
-    peering     = false
+    vpn_gateway  = false
+    vms          = true
+    peering      = false
+    datto_policy = false
+  }
+}
+
+# Datto RMM Configuration
+variable "datto_rmm_config" {
+  description = "Datto RMM agent deployment configuration"
+  type = object({
+    site_guid = string
+  })
+  default = {
+    site_guid = ""
+  }
+  sensitive = true
+  
+  validation {
+    condition = length(var.datto_rmm_config.site_guid) > 0
+    error_message = "Site GUID must be provided when Datto RMM policy is enabled."
   }
 }
 

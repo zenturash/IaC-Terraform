@@ -90,11 +90,18 @@ spoke_vnets = {
   }
 }
 
-# VPN Gateway (deployed in hub/connectivity subscription)
+# Component deployment control
 deploy_components = {
-  vpn_gateway = true   # Deployed in hub subscription
-  vms         = true   # Deployed in spoke subscription
-  peering     = true   # Cross-subscription peering
+  vpn_gateway  = true   # Deployed in hub subscription
+  vms          = true   # Deployed in spoke subscription
+  peering      = true   # Cross-subscription peering
+  datto_policy = true   # Deploy Datto RMM policy to spoke subscriptions
+}
+
+# Datto RMM Configuration (deployed to spoke subscriptions)
+datto_rmm_config = {
+  enabled   = true
+  site_guid = "your-datto-rmm-site-guid"  # Replace with your actual site GUID
 }
 
 # VMs (deployed across multiple spokes)
@@ -198,6 +205,36 @@ export ARM_CLIENT_SECRET="service-principal-password"
 export ARM_TENANT_ID="tenant-id"
 ```
 
+## 🔧 Datto RMM Policy Deployment
+
+### Multi-Subscription Policy Strategy
+The Datto RMM policy is deployed strategically across subscriptions:
+
+- **Hub Subscription**: No Datto RMM policy (connectivity resources only)
+- **Spoke Subscriptions**: Datto RMM policy deployed to each spoke subscription
+- **Policy Scope**: Subscription-level for comprehensive VM coverage
+- **Automatic Deployment**: All Windows VMs automatically get the agent
+
+### Policy Configuration
+```hcl
+# Datto RMM is deployed to each spoke subscription
+datto_rmm_config = {
+  enabled   = true
+  site_guid = "your-datto-rmm-site-guid"
+}
+
+# Policy deployment control
+deploy_components = {
+  datto_policy = true  # Deploys to all spoke subscriptions
+}
+```
+
+### Benefits of Multi-Subscription Policy Deployment
+- **Workload-Focused**: Only monitors actual workload VMs, not connectivity infrastructure
+- **Subscription Isolation**: Each spoke subscription has its own policy assignment
+- **Scalable**: Automatically applies to new VMs in any spoke subscription
+- **Compliance**: Ensures all workload VMs are monitored regardless of subscription
+
 ## 📊 Resource Deployment Matrix
 
 | Resource Type | Single VNet | Hub-Spoke (Same Sub) | Hub-Spoke (Multi-Sub) |
@@ -207,6 +244,7 @@ export ARM_TENANT_ID="tenant-id"
 | VPN Gateway | Default Subscription | Default Subscription | Hub Subscription |
 | Virtual Machines | Default Subscription | Default Subscription | Spoke Subscription |
 | VNet Peering | N/A | Same Subscription | Cross-Subscription |
+| Datto RMM Policy | Default Subscription | Default Subscription | Spoke Subscriptions |
 
 ## 🔍 Validation & Testing
 

@@ -32,9 +32,15 @@ subscriptions = {
 
 # Component Deployment Control
 deploy_components = {
-  vpn_gateway = true   # Deploy VPN Gateway in hub
-  vms         = true   # Deploy VMs in spokes
-  peering     = true   # Enable cross-subscription VNet peering
+  vpn_gateway  = true   # Deploy VPN Gateway in hub
+  vms          = true   # Deploy VMs in spokes
+  peering      = true   # Enable cross-subscription VNet peering
+  datto_policy = true   # Deploy Datto RMM policy in all spokes
+}
+
+# Datto RMM Configuration
+datto_rmm_config = {
+  site_guid = "d5792943-c2e4-40b3-84b8-dccac61f4d35"  # Replace with your actual Datto RMM site GUID
 }
 
 # Hub VNet Configuration (Deployed in Hub Subscription)

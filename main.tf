@@ -329,3 +329,66 @@ module "vpn_hub" {
 
   depends_on = [module.hub_networking]
 }
+
+# Datto RMM Policy (Single VNet mode) - Deploy BEFORE VMs
+module "datto_rmm_policy_single" {
+  count  = var.architecture_mode == "single-vnet" && var.deploy_components.datto_policy ? 1 : 0
+  source = "./modules/azure-policy-datto-rmm"
+
+  # Required variables
+  site_guid       = var.datto_rmm_config.site_guid
+  subscription_id = data.azurerm_client_config.current.subscription_id
+  location        = var.location
+
+  # Optional customization
+  policy_name                = "deploy-datto-rmm-agent-single"
+  policy_display_name        = "Deploy Datto RMM Agent on Windows VMs (Single VNet)"
+  assignment_name            = "assign-datto-rmm-agent-single"
+  assignment_display_name    = "Assign Datto RMM Agent Policy (Single VNet)"
+  create_remediation_task    = true
+
+  tags = merge(local.common_tags, {
+    tier = "policy"
+    architecture = var.architecture_mode
+    component = "datto-rmm"
+  })
+
+  # Policy should be created BEFORE VMs, only depends on networking
+  depends_on = [module.single_networking]
+}
+
+# Datto RMM Policy (Hub-Spoke mode - Deploy to each spoke subscription) - Deploy BEFORE VMs
+module "datto_rmm_policy_spoke" {
+  for_each = var.architecture_mode == "hub-spoke" && var.deploy_components.datto_policy ? var.subscriptions.spoke : {}
+  source   = "./modules/azure-policy-datto-rmm"
+
+  providers = {
+    azurerm = azurerm.spoke
+  }
+
+  # Required variables
+  site_guid       = var.datto_rmm_config.site_guid
+  subscription_id = each.value
+  location        = var.location
+
+  # Optional customization
+  policy_name                = "deploy-datto-rmm-agent-${each.key}"
+  policy_display_name        = "Deploy Datto RMM Agent on Windows VMs (${title(each.key)} Spoke)"
+  assignment_name            = "assign-datto-rmm-agent-${each.key}"
+  assignment_display_name    = "Assign Datto RMM Agent Policy (${title(each.key)} Spoke)"
+  create_remediation_task    = true
+
+  tags = merge(local.common_tags, {
+    tier = "policy"
+    architecture = var.architecture_mode
+    component = "datto-rmm"
+    spoke_name = each.key
+    subscription_id = each.value
+  })
+
+  # Policy should be created BEFORE VMs, only depends on networking
+  depends_on = [module.spoke_networking]
+}
+
+# Data source for current client configuration (needed for subscription ID)
+data "azurerm_client_config" "current" {}

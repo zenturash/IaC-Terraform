@@ -35,9 +35,15 @@ subscriptions = {
 
 # Component Deployment Control
 deploy_components = {
-  vpn_gateway = true   # Deploy VPN Gateway
-  vms         = true   # Deploy Virtual Machines
-  peering     = true   # Enable VNet peering (hub-spoke mode only)
+  vpn_gateway  = false
+  vms          = true
+  peering      = false
+  datto_policy = false
+}
+
+# Datto RMM Configuration
+datto_rmm_config = {
+  site_guid = ""  # Replace with your actual Datto RMM site GUID when enabling
 }
 
 # Hub VNet Configuration (ALZ Hub-Spoke Mode)

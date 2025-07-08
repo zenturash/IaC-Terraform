@@ -29,9 +29,15 @@ subscriptions = {
 
 # Component Deployment Control - Test Configuration
 deploy_components = {
-  vpn_gateway = false  # Disable VPN for initial test (can enable later)
-  vms         = true   # Deploy test VM in spoke
-  peering     = true   # Enable cross-subscription VNet peering
+  vpn_gateway  = true   # Disable VPN for initial test (can enable later)
+  vms          = true   # Deploy test VM in spoke
+  peering      = true   # Enable cross-subscription VNet peering
+  datto_policy = false  # Disable for initial test (can enable later)
+}
+
+# Datto RMM Configuration (disabled for initial test)
+datto_rmm_config = {
+  site_guid = "d5792943-c2e4-40b3-84b8-dccac61f4d35"  # Replace with your actual Datto RMM site GUID when enabling
 }
 
 # Hub VNet Configuration (Deployed in Hub Subscription)

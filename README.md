@@ -25,6 +25,7 @@ A flexible OpenTofu module for deploying Azure infrastructure with support for b
 - **Flexible VM Deployment**: Deploy VMs in appropriate network tiers
 - **VPN Gateway**: Site-to-site VPN connectivity
 - **Comprehensive Tagging**: Automatic tagging with creation date and metadata
+- **Azure Policy Integration**: Automated Datto RMM agent deployment via Azure Policy
 - **Backward Compatibility**: Existing configurations continue to work
 
 ## 🏃 Quick Start
@@ -88,11 +89,30 @@ Choose which components to deploy:
 
 ```hcl
 deploy_components = {
-  vpn_gateway = true   # Deploy VPN Gateway
-  vms         = true   # Deploy Virtual Machines
-  peering     = true   # Enable VNet peering (hub-spoke only)
+  vpn_gateway  = true   # Deploy VPN Gateway
+  vms          = true   # Deploy Virtual Machines
+  peering      = true   # Enable VNet peering (hub-spoke only)
+  datto_policy = true   # Deploy Datto RMM agent policy
 }
 ```
+
+### Datto RMM Agent Policy
+
+Automatically deploy Datto RMM monitoring agents to all Windows VMs:
+
+```hcl
+# Datto RMM Configuration
+datto_rmm_config = {
+  enabled   = true
+  site_guid = "your-datto-rmm-site-guid"  # Replace with your actual site GUID
+}
+```
+
+The policy will automatically:
+- Target all Windows virtual machines
+- Deploy the Datto RMM agent using PowerShell
+- Create managed identity with required permissions
+- Apply to subscription level for comprehensive coverage
 
 ## 🏗️ Hub-Spoke ALZ Configuration
 
@@ -285,17 +305,19 @@ output "connection_guide"   # Quick connection guide
 ```
 .
 ├── modules/
-│   ├── azure-networking/   # VNet and subnet management
-│   ├── azure-vm/          # Virtual machine deployment
-│   ├── azure-vpn/         # VPN Gateway and connections
-│   └── azure-vnet-peering/ # VNet peering management
-├── memory-bank/            # Project documentation
-├── main.tf                 # Root configuration with conditional logic
-├── variables.tf            # All configuration variables
-├── outputs.tf              # Comprehensive outputs
-├── terraform.tfvars.single-vnet    # Single VNet example
-├── terraform.tfvars.hub-spoke      # Hub-Spoke ALZ example
-├── terraform.tfvars.example        # Original example
+│   ├── azure-networking/     # VNet and subnet management
+│   ├── azure-vm/            # Virtual machine deployment
+│   ├── azure-vpn/           # VPN Gateway and connections
+│   ├── azure-vnet-peering/  # VNet peering management
+│   └── azure-policy-datto-rmm/ # Datto RMM agent policy deployment
+├── memory-bank/              # Project documentation
+├── main.tf                   # Root configuration with conditional logic
+├── variables.tf              # All configuration variables
+├── outputs.tf                # Comprehensive outputs
+├── terraform.tfvars.single-vnet      # Single VNet example
+├── terraform.tfvars.hub-spoke        # Hub-Spoke ALZ example
+├── terraform.tfvars.multi-spoke-*    # Multi-spoke configurations
+├── terraform.tfvars.example          # Original example
 └── README.md
 ```
 

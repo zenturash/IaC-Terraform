@@ -115,6 +115,27 @@ virtual_machines = {
       }
     ]
   }
+    "test-vm-02" = {
+    vm_size             = "Standard_B1s"        # Smallest/cheapest VM for testing
+    subnet_name         = "subnet-test"
+    resource_group_name = "rg-test-vm2"
+    enable_public_ip    = true                  # Enable for easy testing access
+    os_disk_type        = "Standard_LRS"        # Cost-effective storage for testing
+    spoke_name          = "test-workload"       # Deploy to test-workload spoke
+    nsg_rules = [
+      {
+        name                       = "AllowRDP"
+        priority                   = 1000
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "3389"
+        source_address_prefix      = "*"           # Allow from anywhere for testing (change to your IP for security)
+        destination_address_prefix = "*"
+      }
+    ]
+  }
 }
 
 

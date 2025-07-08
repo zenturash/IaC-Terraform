@@ -1,0 +1,12 @@
+{
+  "ContainerUrl": "https://zenturamspguestconfig.blob.core.windows.net/guest-configurations",
+  "Location": "West Europe",
+  "ContainerName": "guest-configurations",
+  "StorageAccountName": "zenturamspguestconfig",
+  "SasUrl": "https://zenturamspguestconfig.blob.core.windows.net/guest-configurationssv=2025-01-05&st=2025-07-08T14%3A32%3A41Z&se=2026-07-08T14%3A32%3A41Z&sr=c&sp=rl&sig=AiUl%2FYhURNf0Cwls5D12XIDOHa3AKMhJZjlUZx%2FL8R0%3D",
+  "SasToken": "sv=2025-01-05&st=2025-07-08T14%3A32%3A41Z&se=2026-07-08T14%3A32%3A41Z&sr=c&sp=rl&sig=AiUl%2FYhURNf0Cwls5D12XIDOHa3AKMhJZjlUZx%2FL8R0%3D",
+  "ResourceGroupName": "000_CrossTenant-GuestConfig",
+  "SasExpiry": "2026-07-08T16:32:41.4436895+02:00",
+  "CreatedDate": "2025-07-08T16:32:41.4778427+02:00",
+  "StorageAccountUrl": "https://zenturamspguestconfig.blob.core.windows.net"
+}

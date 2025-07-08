@@ -1,0 +1,33 @@
+MSP Central Storage Setup Summary
+================================
+Setup Date: 07/08/2025 16:32:41
+Resource Group: 000_CrossTenant-GuestConfig
+Storage Account: zenturamspguestconfig
+Container: guest-configurations
+Location: West Europe
+
+Storage URLs:
+- Storage Account: https://zenturamspguestconfig.blob.core.windows.net
+- Container: https://zenturamspguestconfig.blob.core.windows.net/guest-configurations
+
+SAS Token Information:
+- Permissions: Read, List (cross-tenant access)
+- Expires: 07/08/2026 16:32:41
+- Token: sv=2025-01-05&st=2025-07-08T14%3A32%3A41Z&se=2026-07-08T14%3A32%3A41Z&sr=c&sp=rl&sig=AiUl%2FYhURNf0Cwls5D12XIDOHa3AKMhJZjlUZx%2FL8R0%3D
+
+Full SAS URL (for Guest Configuration policies):
+https://zenturamspguestconfig.blob.core.windows.net/guest-configurationssv=2025-01-05&st=2025-07-08T14%3A32%3A41Z&se=2026-07-08T14%3A32%3A41Z&sr=c&sp=rl&sig=AiUl%2FYhURNf0Cwls5D12XIDOHa3AKMhJZjlUZx%2FL8R0%3D
+
+Next Steps:
+1. Upload Guest Configuration packages to this container
+2. Use the SAS URL in Guest Configuration Policy definitions
+3. Deploy policies to customer tenants
+
+Upload Command Example:
+az storage blob upload --account-name zenturamspguestconfig --container-name guest-configurations --name "InstallDattoRMM.zip" --file ".\Packages\InstallDattoRMM.zip" --sas-token "sv=2025-01-05&st=2025-07-08T14%3A32%3A41Z&se=2026-07-08T14%3A32%3A41Z&sr=c&sp=rl&sig=AiUl%2FYhURNf0Cwls5D12XIDOHa3AKMhJZjlUZx%2FL8R0%3D"
+
+PowerShell Upload Example:
+Set-AzStorageBlobContent -File ".\Packages\InstallDattoRMM.zip" -Container "guest-configurations" -Blob "InstallDattoRMM.zip" -Context $storageContext
+
+IMPORTANT: Keep the SAS token secure and rotate before expiry!
+

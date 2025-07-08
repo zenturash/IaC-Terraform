@@ -53,13 +53,6 @@ resource "azurerm_network_security_rule" "rules" {
   network_security_group_name = azurerm_network_security_group.main[0].name
 }
 
-# Associate NSG with Subnet (conditional)
-resource "azurerm_subnet_network_security_group_association" "main" {
-  count                    = var.enable_public_ip ? 1 : 0
-  subnet_id                = var.subnet_id
-  network_security_group_id = azurerm_network_security_group.main[0].id
-}
-
 # Network Interface
 resource "azurerm_network_interface" "main" {
   name                = "nic-${var.vm_name}"
@@ -73,6 +66,13 @@ resource "azurerm_network_interface" "main" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = var.enable_public_ip ? azurerm_public_ip.main[0].id : null
   }
+}
+
+# Associate NSG with Network Interface (conditional - avoids subnet conflicts)
+resource "azurerm_network_interface_security_group_association" "main" {
+  count                     = var.enable_public_ip ? 1 : 0
+  network_interface_id      = azurerm_network_interface.main.id
+  network_security_group_id = azurerm_network_security_group.main[0].id
 }
 
 # Virtual Machine

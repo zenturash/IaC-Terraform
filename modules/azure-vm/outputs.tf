@@ -75,6 +75,11 @@ output "nsg_name" {
   value       = var.enable_public_ip ? azurerm_network_security_group.main[0].name : null
 }
 
+output "nsg_association_id" {
+  description = "ID of the Network Interface Security Group Association (if created)"
+  value       = var.enable_public_ip ? azurerm_network_interface_security_group_association.main[0].id : null
+}
+
 output "nsg_rules" {
   description = "List of NSG rules applied"
   value       = var.nsg_rules

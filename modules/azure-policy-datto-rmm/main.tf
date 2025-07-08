@@ -74,8 +74,8 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
               equals = "Microsoft.CPlat.Core"
             },
             {
-              field = "Microsoft.Compute/virtualMachines/extensions/settings.source.script"
-              contains = "DattoRMM"
+              field = "name"
+              equals = "DattoRMMAgent"
             }
           ]
         }

@@ -109,7 +109,7 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
                     autoUpgradeMinorVersion = true
                     settings = {
                       source = {
-                        script = "[concat('# DattoRMM Agent Installation Script\\ntry {\\n    Write-Output \"Starting Datto RMM agent installation...\"\\n    (New-Object System.Net.WebClient).DownloadFile(\"https://merlot.rmm.datto.com/download-agent/windows/', parameters('siteGuid'), '\", \"$env:TEMP/AgentInstall.exe\")\\n    Write-Output \"Downloaded agent installer\"\\n    Start-Process \"$env:TEMP/AgentInstall.exe\" -ArgumentList \"/S\" -Wait -NoNewWindow\\n    Write-Output \"Datto RMM agent installation completed successfully\"\\n} catch {\\n    Write-Output \"Installation failed: $_\"\\n    exit 1\\n}')]"
+                        script = "[concat('(New-Object System.Net.WebClient).DownloadFile(\"https://merlot.rmm.datto.com/download-agent/windows/', parameters('siteGuid'), '\", \"$env:TEMP\\AgentInstall.exe\"); Start-Process \"$env:TEMP\\AgentInstall.exe\" -ArgumentList \"/S\" -Wait')]"
                       }
                     }
                     protectedSettings = {}

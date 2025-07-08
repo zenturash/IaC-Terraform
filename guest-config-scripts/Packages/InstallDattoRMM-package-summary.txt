@@ -1,0 +1,23 @@
+Datto RMM Guest Configuration Package Summary
+============================================
+Creation Date: 07/08/2025 16:44:32
+Package Name: InstallDattoRMM
+Package Version: 1.0.0
+Package Path: C:\Users\skh\SKH-Folders\Code\tofu\guest-config-scripts\Packages\InstallDattoRMM.zip
+Package Size: 680685 bytes
+Source MOF: .\Output\localhost.mof
+Validation: PASSED
+
+Package Contents:
+- localhost.mof (DSC configuration)
+- Modules/ (PowerShell DSC modules)
+
+Next Steps:
+1. Upload package to Azure Storage Account
+2. Generate SAS token for cross-tenant access
+3. Create Guest Configuration Policy Definition
+4. Test policy assignment on target VMs
+
+Upload Command Example:
+az storage blob upload --account-name <storage-account> --container-name <container> --name InstallDattoRMM.zip --file "C:\Users\skh\SKH-Folders\Code\tofu\guest-config-scripts\Packages\InstallDattoRMM.zip"
+

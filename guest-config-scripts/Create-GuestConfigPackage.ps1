@@ -162,30 +162,43 @@ try {
         # Extract ZIP
         Expand-Archive -Path $package.Path -DestinationPath $tempExtractPath -Force
         
-        # Check for required files
-        $requiredFiles = @("localhost.mof", "Modules")
+        # Check for required files (Guest Configuration packages have different structure)
+        $requiredFiles = @("Modules")
         $validationPassed = $true
         
-        foreach ($file in $requiredFiles) {
-            $filePath = Join-Path $tempExtractPath $file
-            if (Test-Path $filePath) {
-                Write-Host "  ✓ $file found in package" -ForegroundColor Green
-            } else {
-                Write-Host "  ✗ $file NOT found in package" -ForegroundColor Red
-                $validationPassed = $false
-            }
+        # Check for Modules directory
+        $modulesPath = Join-Path $tempExtractPath "Modules"
+        if (Test-Path $modulesPath) {
+            Write-Host "  ✓ Modules directory found in package" -ForegroundColor Green
+        } else {
+            Write-Host "  ✗ Modules directory NOT found in package" -ForegroundColor Red
+            $validationPassed = $false
         }
         
-        # Check MOF content
-        $extractedMofPath = Join-Path $tempExtractPath "localhost.mof"
-        if (Test-Path $extractedMofPath) {
-            $mofContent = Get-Content $extractedMofPath -Raw
+        # Check for MOF file (it might be named differently in Guest Configuration packages)
+        $mofFiles = Get-ChildItem -Path $tempExtractPath -Filter "*.mof" -Recurse
+        if ($mofFiles.Count -gt 0) {
+            Write-Host "  ✓ MOF file(s) found in package: $($mofFiles.Name -join ', ')" -ForegroundColor Green
+            
+            # Check MOF content for Datto RMM URL
+            $mofContent = Get-Content $mofFiles[0].FullName -Raw
             if ($mofContent -match "merlot\.rmm\.datto\.com") {
-                Write-Host "  ✓ Datto RMM URL found in extracted MOF" -ForegroundColor Green
+                Write-Host "  ✓ Datto RMM URL found in MOF content" -ForegroundColor Green
             } else {
-                Write-Host "  ✗ Datto RMM URL NOT found in extracted MOF" -ForegroundColor Red
+                Write-Host "  ✗ Datto RMM URL NOT found in MOF content" -ForegroundColor Red
                 $validationPassed = $false
             }
+        } else {
+            Write-Host "  ✗ No MOF files found in package" -ForegroundColor Red
+            $validationPassed = $false
+        }
+        
+        # Check for PSDscResources module
+        $psDscResourcesPath = Join-Path $modulesPath "PSDscResources"
+        if (Test-Path $psDscResourcesPath) {
+            Write-Host "  ✓ PSDscResources module found in package" -ForegroundColor Green
+        } else {
+            Write-Host "  - PSDscResources module not found (may be included differently)" -ForegroundColor Yellow
         }
         
     } finally {

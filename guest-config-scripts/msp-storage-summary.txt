@@ -13,10 +13,10 @@ Storage URLs:
 SAS Token Information:
 - Permissions: Read, List (cross-tenant access)
 - Expires: 07/08/2026 16:32:41
-- Token: sv=2025-01-05&st=2025-07-08T14%3A32%3A41Z&se=2026-07-08T14%3A32%3A41Z&sr=c&sp=rl&sig=AiUl%2FYhURNf0Cwls5D12XIDOHa3AKMhJZjlUZx%2FL8R0%3D
+- Token: sp=rl&st=2025-07-08T14:33:32Z&se=2035-08-09T22:33:32Z&spr=https&sv=2024-11-04&sr=c&sig=rvcknUpe7QAkUOGYTHh6aKMrYNK0ujOMQacz19Osc24%3D
 
 Full SAS URL (for Guest Configuration policies):
-https://zenturamspguestconfig.blob.core.windows.net/guest-configurationssv=2025-01-05&st=2025-07-08T14%3A32%3A41Z&se=2026-07-08T14%3A32%3A41Z&sr=c&sp=rl&sig=AiUl%2FYhURNf0Cwls5D12XIDOHa3AKMhJZjlUZx%2FL8R0%3D
+https://zenturamspguestconfig.blob.core.windows.net/guest-configurations?sp=rl&st=2025-07-08T14:33:32Z&se=2035-08-09T22:33:32Z&spr=https&sv=2024-11-04&sr=c&sig=rvcknUpe7QAkUOGYTHh6aKMrYNK0ujOMQacz19Osc24%3D
 
 Next Steps:
 1. Upload Guest Configuration packages to this container

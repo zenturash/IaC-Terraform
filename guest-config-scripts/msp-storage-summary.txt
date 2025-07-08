@@ -17,6 +17,7 @@ SAS Token Information:
 
 Full SAS URL (for Guest Configuration policies):
 https://zenturamspguestconfig.blob.core.windows.net/guest-configurations?sp=rl&st=2025-07-08T14:33:32Z&se=2035-08-09T22:33:32Z&spr=https&sv=2024-11-04&sr=c&sig=rvcknUpe7QAkUOGYTHh6aKMrYNK0ujOMQacz19Osc24%3D
+https://zenturamspguestconfig.blob.core.windows.net/guest-configurations/InstallDattoRMM.zip?sp=rl&st=2025-07-08T14:33:32Z&se=2035-08-09T22:33:32Z&spr=https&sv=2024-11-04&sr=c&sig=rvcknUpe7QAkUOGYTHh6aKMrYNK0ujOMQacz19Osc24%3D
 
 Next Steps:
 1. Upload Guest Configuration packages to this container

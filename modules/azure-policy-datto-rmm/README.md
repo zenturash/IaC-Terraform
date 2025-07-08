@@ -23,14 +23,30 @@ The module deploys:
 
 ## PowerShell Script
 
-The policy executes this PowerShell script on Windows VMs:
+The policy uses **RunCommandWindows extension** (instead of CustomScriptExtension) to avoid conflicts with existing VM extensions. It executes this PowerShell script on Windows VMs:
 
 ```powershell
-(New-Object System.Net.WebClient).DownloadFile("https://merlot.rmm.datto.com/download-agent/windows/[SITE-GUID]", "$env:TEMP/AgentInstall.exe");
-Start-Process "$env:TEMP/AgentInstall.exe" -Wait
+# DattoRMM Agent Installation Script
+try {
+    Write-Output "Starting Datto RMM agent installation..."
+    (New-Object System.Net.WebClient).DownloadFile("https://merlot.rmm.datto.com/download-agent/windows/[SITE-GUID]", "$env:TEMP/AgentInstall.exe")
+    Write-Output "Downloaded agent installer"
+    Start-Process "$env:TEMP/AgentInstall.exe" -ArgumentList "/S" -Wait -NoNewWindow
+    Write-Output "Datto RMM agent installation completed successfully"
+} catch {
+    Write-Output "Installation failed: $_"
+    exit 1
+}
 ```
 
 Where `[SITE-GUID]` is replaced with your Datto RMM site GUID parameter.
+
+### Why RunCommandWindows?
+
+- ✅ **Avoids Extension Conflicts**: Multiple RunCommand extensions can coexist, unlike CustomScriptExtension
+- ✅ **Better for Policies**: Designed for one-time script execution via policies
+- ✅ **Improved Reliability**: Better error handling and logging
+- ✅ **Brownfield Compatible**: Works on VMs that already have other extensions
 
 ## Usage
 

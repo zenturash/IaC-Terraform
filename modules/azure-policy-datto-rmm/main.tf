@@ -67,15 +67,15 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
           allOf = [
             {
               field = "Microsoft.Compute/virtualMachines/extensions/type"
-              equals = "CustomScriptExtension"
+              equals = "RunCommandWindows"
             },
             {
               field = "Microsoft.Compute/virtualMachines/extensions/publisher"
-              equals = "Microsoft.Compute"
+              equals = "Microsoft.CPlat.Core"
             },
             {
-              field = "Microsoft.Compute/virtualMachines/extensions/settings"
-              contains = "AgentInstall.exe"
+              field = "Microsoft.Compute/virtualMachines/extensions/settings.source.script"
+              contains = "DattoRMM"
             }
           ]
         }
@@ -103,12 +103,14 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
                   name = "[concat(parameters('vmName'), '/DattoRMMAgent')]"
                   location = "[parameters('location')]"
                   properties = {
-                    publisher = "Microsoft.Compute"
-                    type = "CustomScriptExtension"
-                    typeHandlerVersion = "1.10"
+                    publisher = "Microsoft.CPlat.Core"
+                    type = "RunCommandWindows"
+                    typeHandlerVersion = "1.1"
                     autoUpgradeMinorVersion = true
                     settings = {
-                                  commandToExecute = "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command \"try { (New-Object System.Net.WebClient).DownloadFile(\\\"https://merlot.rmm.datto.com/download-agent/windows/', parameters('siteGuid'), '\\\", \\\"$env:TEMP/AgentInstall.exe\\\"); Start-Process \\\"$env:TEMP/AgentInstall.exe\\\" -ArgumentList \\\"/S\\\" -Wait -NoNewWindow } catch { Write-Output \\\"Installation failed: $_\\\"; exit 1 }\"')]"
+                      source = {
+                        script = "[concat('# DattoRMM Agent Installation Script\\ntry {\\n    Write-Output \"Starting Datto RMM agent installation...\"\\n    (New-Object System.Net.WebClient).DownloadFile(\"https://merlot.rmm.datto.com/download-agent/windows/', parameters('siteGuid'), '\", \"$env:TEMP/AgentInstall.exe\")\\n    Write-Output \"Downloaded agent installer\"\\n    Start-Process \"$env:TEMP/AgentInstall.exe\" -ArgumentList \"/S\" -Wait -NoNewWindow\\n    Write-Output \"Datto RMM agent installation completed successfully\"\\n} catch {\\n    Write-Output \"Installation failed: $_\"\\n    exit 1\\n}')]"
+                      }
                     }
                     protectedSettings = {}
                   }

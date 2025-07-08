@@ -3,8 +3,8 @@
 
 # Subscription Configuration - Use meaningful names
 subscriptions = {
-  production   = "caaf1a53-3a0a-42e4-9688-4aac8f95a2d7"  # Replace with your production subscription ID
-  development  = "52bc998c-51a4-40fa-be04-26774b4c5f0e"  # Replace with your development subscription ID
+  prod   = "caaf1a53-3a0a-42e4-9688-4aac8f95a2d7"  # Replace with your production subscription ID
+  # development  = "52bc998c-51a4-40fa-be04-26774b4c5f0e"  # Replace with your development subscription ID
   # management   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Uncomment and add management subscription if needed
   # connectivity = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Uncomment and add connectivity subscription if needed
   # identity     = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Uncomment and add identity subscription if needed
@@ -37,14 +37,6 @@ policy_config = {
     policy_display_name    = "Deploy Datto RMM Agent on Windows VMs (Production)"
     assignment_name        = "assign-datto-rmm-agent-production"
     assignment_display_name = "Assign Datto RMM Agent Policy (Production Environment)"
-    create_remediation_task = true
-  }
-  development = {
-    enabled                 = true
-    policy_name            = "deploy-datto-rmm-agent-development"
-    policy_display_name    = "Deploy Datto RMM Agent on Windows VMs (Development)"
-    assignment_name        = "assign-datto-rmm-agent-development"
-    assignment_display_name = "Assign Datto RMM Agent Policy (Development Environment)"
     create_remediation_task = true
   }
   # management = {

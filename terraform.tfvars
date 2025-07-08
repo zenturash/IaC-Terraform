@@ -95,7 +95,7 @@ vpn_configuration = {
 # Test Virtual Machine (Deployed in Spoke Subscription)
 virtual_machines = {
   "test-vm-01" = {
-    vm_size             = "Standard_B1s"        # Smallest/cheapest VM for testing
+    vm_size             = "Standard_B2s"        # Larger VM for Datto RMM installation
     subnet_name         = "subnet-test"
     resource_group_name = "rg-test-vm"
     enable_public_ip    = true                  # Enable for easy testing access
@@ -116,7 +116,7 @@ virtual_machines = {
     ]
   }
     "test-vm-02" = {
-    vm_size             = "Standard_B1s"        # Smallest/cheapest VM for testing
+    vm_size             = "Standard_B2s"        # Larger VM for Datto RMM installation
     subnet_name         = "subnet-test"
     resource_group_name = "rg-test-vm2"
     enable_public_ip    = true                  # Enable for easy testing access

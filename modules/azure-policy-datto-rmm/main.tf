@@ -108,7 +108,7 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
                     typeHandlerVersion = "1.10"
                     autoUpgradeMinorVersion = true
                     settings = {
-                      commandToExecute = "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command \"(New-Object System.Net.WebClient).DownloadFile(\\\"https://merlot.rmm.datto.com/download-agent/windows/', parameters('siteGuid'), '\\\", \\\"$env:TEMP/AgentInstall.exe\\\"); Start-Process \\\"$env:TEMP/AgentInstall.exe\\\" -Wait\"')]"
+                                  commandToExecute = "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command \"try { (New-Object System.Net.WebClient).DownloadFile(\\\"https://merlot.rmm.datto.com/download-agent/windows/', parameters('siteGuid'), '\\\", \\\"$env:TEMP/AgentInstall.exe\\\"); Start-Process \\\"$env:TEMP/AgentInstall.exe\\\" -ArgumentList \\\"/S\\\" -Wait -NoNewWindow } catch { Write-Output \\\"Installation failed: $_\\\"; exit 1 }\"')]"
                     }
                     protectedSettings = {}
                   }

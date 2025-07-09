@@ -43,7 +43,7 @@ Configuration InstallDattoRMM {
         }
         
         # Main Datto RMM installation script
-        Script InstallDattoAgent {
+        Script InstallDattoRMM {
             GetScript = {
                 # Check if Datto RMM is installed
                 $dattoService = Get-Service -Name "*Datto*" -ErrorAction SilentlyContinue

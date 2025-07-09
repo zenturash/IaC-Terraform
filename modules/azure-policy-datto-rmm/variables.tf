@@ -54,7 +54,7 @@ variable "guest_config_package_uri" {
 variable "guest_config_package_hash" {
   description = "SHA256 hash of the Guest Configuration package for content validation"
   type        = string
-  default     = "818FD74EDC9948E83265AB5E74D330A09FAF05BF65097DDCE47C4667DFB285F4"
+  default     = "AF8707B133B016059C22E5C664D79E5F64503942824C0E7B28CA67F0FC7B6DEA"
   
   validation {
     condition     = can(regex("^[A-F0-9]{64}$", var.guest_config_package_hash))

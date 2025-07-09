@@ -1,9 +1,9 @@
 Datto RMM Guest Configuration Compilation Summary
 ===============================================
-Compilation Date: 07/09/2025 11:50:27
+Compilation Date: 07/09/2025 12:10:38
 Compilation Mode: Guest Configuration (Parameterized)
 MOF File: E:\SKH-Folder\Code\IaC-Terraform\guest-config-scripts\Output\localhost.mof
-MOF Size: 8388 bytes
+MOF Size: 8386 bytes
 Validation: PASSED
 
 Guest Configuration Features:

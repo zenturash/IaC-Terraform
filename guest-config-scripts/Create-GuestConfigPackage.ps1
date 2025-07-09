@@ -122,16 +122,18 @@ try {
     # Create Guest Configuration package
     Write-Host "Creating Guest Configuration package..." -ForegroundColor Cyan
     
-    # Prepare package parameters
+    # Prepare package parameters including Type
     $packageParams = @{
         Name = $PackageName
         Configuration = $mofFile
         Path = $OutputPath
         Version = $PackageVersion
         Force = $Force.IsPresent
+        Type = "AuditAndSet"
     }
 
-    # Create the package
+    # Create the package with AuditAndSet type (applies configuration)
+    Write-Host "Creating package with Type: AuditAndSet" -ForegroundColor Yellow
     $package = New-GuestConfigurationPackage @packageParams
 
     if (-not $package) {

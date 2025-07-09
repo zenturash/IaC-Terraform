@@ -29,6 +29,10 @@ module "datto_rmm_policies" {
   site_guid       = var.datto_rmm_config.site_guid
   subscription_id = each.value
   location        = var.location
+  
+  # Guest Configuration package details
+  guest_config_package_filename = var.datto_rmm_config.guest_config_package_filename
+  guest_config_package_hash     = var.datto_rmm_config.guest_config_package_hash
 
   # Customer configuration
   customer_name = var.customer_config.customer_name

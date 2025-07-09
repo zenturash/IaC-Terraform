@@ -107,7 +107,7 @@ output "remediation_command" {
 # Guest Configuration Information
 output "guest_config_package_uri" {
   description = "URI of the Guest Configuration package"
-  value       = var.guest_config_package_uri
+  value       = "${var.guest_config_base_url}/${var.guest_config_package_filename}${var.guest_config_sas_token}"
   sensitive   = true
 }
 

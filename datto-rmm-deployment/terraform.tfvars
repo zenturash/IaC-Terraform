@@ -13,6 +13,8 @@ subscriptions = {
 # Datto RMM Configuration
 datto_rmm_config = {
   site_guid = "ff01b552-a4cb-415e-b3c2-c6581a067479"  # Replace with your actual Datto RMM site GUID
+  guest_config_package_filename = "InstallDattoRMM-0000.zip"  # Customer-specific package filename
+  guest_config_package_hash = "D1C6D4C6570661B87546FA06D8B4E1E3AB9B0FF586FD12A9767C3B429495660F"  # Hash from Generate-CustomerPackage.ps1
 }
 
 # Customer Configuration (Optional - for Guest Configuration logging)

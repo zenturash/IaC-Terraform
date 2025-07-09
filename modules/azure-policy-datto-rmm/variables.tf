@@ -44,22 +44,38 @@ variable "policy_description" {
   default     = "Automatically deploys Datto RMM agent on Windows virtual machines using Azure Guest Configuration"
 }
 
-variable "guest_config_package_uri" {
-  description = "URI to the Guest Configuration package with SAS token"
+variable "guest_config_package_filename" {
+  description = "Filename of the customer-specific Guest Configuration package (e.g., InstallDattoRMM-1234.zip)"
   type        = string
-  default     = "https://zenturamspguestconfig.blob.core.windows.net/guest-configurations/InstallDattoRMM.zip?sp=rl&st=2025-07-08T14:33:32Z&se=2035-08-09T22:33:32Z&spr=https&sv=2024-11-04&sr=c&sig=rvcknUpe7QAkUOGYTHh6aKMrYNK0ujOMQacz19Osc24%3D"
-  sensitive   = true
+  
+  validation {
+    condition     = can(regex("^InstallDattoRMM-\\d{4}\\.zip$", var.guest_config_package_filename))
+    error_message = "Package filename must follow format: InstallDattoRMM-XXXX.zip where XXXX is a 4-digit customer number."
+  }
 }
 
 variable "guest_config_package_hash" {
-  description = "SHA256 hash of the Guest Configuration package for content validation"
+  description = "SHA256 hash of the customer-specific Guest Configuration package for content validation"
   type        = string
-  default     = "6FE1D5F3ACFD867CF34CF3503FCEE9D37CD1A3E0CE2EB9CF20600794D28194C6"
   
   validation {
     condition     = can(regex("^[A-F0-9]{64}$", var.guest_config_package_hash))
     error_message = "Package hash must be a valid 64-character SHA256 hash in uppercase hexadecimal format."
   }
+}
+
+variable "guest_config_base_url" {
+  description = "Base URL to the Guest Configuration storage container with SAS token"
+  type        = string
+  default     = "https://zenturamspguestconfig.blob.core.windows.net/guest-configurations"
+  sensitive   = true
+}
+
+variable "guest_config_sas_token" {
+  description = "SAS token for accessing the Guest Configuration storage container"
+  type        = string
+  default     = "?sp=rl&st=2025-07-08T14:33:32Z&se=2035-08-09T22:33:32Z&spr=https&sv=2024-11-04&sr=c&sig=rvcknUpe7QAkUOGYTHh6aKMrYNK0ujOMQacz19Osc24%3D"
+  sensitive   = true
 }
 
 variable "customer_name" {

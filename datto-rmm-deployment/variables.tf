@@ -21,12 +21,24 @@ variable "subscriptions" {
 variable "datto_rmm_config" {
   description = "Datto RMM configuration"
   type = object({
-    site_guid = string
+    site_guid                     = string
+    guest_config_package_filename = string
+    guest_config_package_hash     = string
   })
   
   validation {
     condition     = length(var.datto_rmm_config.site_guid) > 0
     error_message = "Datto RMM site GUID must be provided."
+  }
+  
+  validation {
+    condition     = can(regex("^InstallDattoRMM-\\d{4}\\.zip$", var.datto_rmm_config.guest_config_package_filename))
+    error_message = "Package filename must follow format: InstallDattoRMM-XXXX.zip where XXXX is a 4-digit customer number."
+  }
+  
+  validation {
+    condition     = can(regex("^[A-F0-9]{64}$", var.datto_rmm_config.guest_config_package_hash))
+    error_message = "Package hash must be a valid 64-character SHA256 hash in uppercase hexadecimal format."
   }
 }
 

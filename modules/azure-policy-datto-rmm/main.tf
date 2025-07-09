@@ -199,13 +199,10 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
                 location = {
                   type = "string"
                 }
-                siteGuid = {
-                  type = "string"
-                }
-                customerName = {
-                  type = "string"
-                }
                 configurationUri = {
+                  type = "string"
+                }
+                contentHash = {
                   type = "string"
                 }
               }
@@ -221,17 +218,7 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
                       version = "1.0.0"
                       assignmentType = "ApplyAndMonitor"
                       contentUri = "[parameters('configurationUri')]"
-                      contentHash = var.guest_config_package_hash
-                      configurationParameter = [
-                        {
-                          name = "InstallDattoRMM;SiteGuid"
-                          value = "[parameters('siteGuid')]"
-                        },
-                        {
-                          name = "InstallDattoRMM;CustomerName"
-                          value = "[parameters('customerName')]"
-                        }
-                      ]
+                      contentHash = "[parameters('contentHash')]"
                       configurationSetting = {
                         configurationMode = "ApplyAndMonitor"
                         allowModuleOverwrite = true
@@ -252,14 +239,11 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
               location = {
                 value = "[field('location')]"
               }
-              siteGuid = {
-                value = "[parameters('siteGuid')]"
-              }
-              customerName = {
-                value = "[parameters('customerName')]"
-              }
               configurationUri = {
-                value = var.guest_config_package_uri
+                value = "${var.guest_config_base_url}/${var.guest_config_package_filename}${var.guest_config_sas_token}"
+              }
+              contentHash = {
+                value = var.guest_config_package_hash
               }
             }
           }

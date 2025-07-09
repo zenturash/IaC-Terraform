@@ -16,6 +16,18 @@
 #>
 
 Configuration InstallDattoRMM {
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
+        [string]$SiteGuid,
+        
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^\d{4}$')]
+        [string]$CustomerNumber,
+        
+        [Parameter(Mandatory = $false)]
+        [string]$CustomerName = "Customer"
+    )
     
     Import-DscResource -ModuleName PSDscResources
     
@@ -48,7 +60,7 @@ Configuration InstallDattoRMM {
                 # Check if Datto RMM is installed
                 # Look for the specific CagService (Datto RMM service)
                 $dattoService = Get-Service -Name "CagService" -ErrorAction SilentlyContinue
-                $dattoProcess = Get-Process -Name "*Cag*" -ErrorAction SilentlyContinue
+                $dattoProcess = Get-Process -Name "CagService" -ErrorAction SilentlyContinue
                 
                 # Safely check registry for Datto RMM installation
                 $dattoRegistry = $null
@@ -71,21 +83,13 @@ Configuration InstallDattoRMM {
             }
             
             SetScript = {
-                # Get parameters from Guest Configuration
-                # These will be injected by Azure Guest Configuration at runtime
-                $siteGuid = $Node.SiteGuid
-                $customerName = $Node.CustomerName
-                
-                if (-not $siteGuid) {
-                    throw "SiteGuid parameter is required but not provided"
-                }
-                
-                if (-not $customerName) {
-                    $customerName = "Default Customer"
-                }
+                # Get hardcoded parameters from compilation time
+                $siteGuid = $using:SiteGuid
+                $customerNumber = $using:CustomerNumber
+                $customerName = $using:CustomerName
                 
                 $url = "https://merlot.rmm.datto.com/download-agent/windows/$siteGuid"
-                $dest = "$env:TEMP\DattoRMMInstaller_$siteGuid.exe"
+                $dest = "$env:TEMP\DattoRMMInstaller_$customerNumber.exe"
                 $logSource = "DattoRMM-DSC"
                 
                 try {
@@ -149,7 +153,7 @@ Configuration InstallDattoRMM {
                 # Check if Datto RMM is properly installed and running
                 # Look for the specific CagService (Datto RMM service)
                 $dattoService = Get-Service -Name "CagService" -ErrorAction SilentlyContinue
-                $dattoProcess = Get-Process -Name "*Cag*" -ErrorAction SilentlyContinue
+                $dattoProcess = Get-Process -Name "CagService" -ErrorAction SilentlyContinue
                 
                 # Safely check registry for Datto RMM installation
                 $dattoRegistry = $null
@@ -166,10 +170,9 @@ Configuration InstallDattoRMM {
                 
                 if ($isInstalled) {
                     try {
-                        $siteGuid = $Node.SiteGuid
-                        if ($siteGuid) {
-                            Write-EventLog -LogName Application -Source "DattoRMM-DSC" -EventId 1007 -Message "Datto RMM agent validation successful for Site GUID: $siteGuid"
-                        }
+                        $siteGuid = $using:SiteGuid
+                        $customerNumber = $using:CustomerNumber
+                        Write-EventLog -LogName Application -Source "DattoRMM-DSC" -EventId 1007 -Message "Datto RMM agent validation successful for Customer $customerNumber, Site GUID: $siteGuid"
                     } catch {
                         # Event log might not be available, continue
                     }

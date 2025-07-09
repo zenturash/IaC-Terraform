@@ -1,0 +1,28 @@
+Customer-Specific Datto RMM Package Summary
+==========================================
+Generation Date: 07/09/2025 13:58:36
+Customer Number: 0000
+Customer Name: Zentura
+Site GUID: ff01b552-a4cb-415e-b3c2-c6581a067479
+
+Package Details:
+- Package Name: InstallDattoRMM-0000.zip
+- Package Path: E:\SKH-Folder\Code\IaC-Terraform\guest-config-scripts\Packages\InstallDattoRMM-0000.zip
+- Package Size: 680848 bytes
+- Package Hash: D1C6D4C6570661B87546FA06D8B4E1E3AB9B0FF586FD12A9767C3B429495660F
+- MOF File: .\CustomerPackages\Customer-0000\localhost.mof
+Next Steps:
+1. Use this package in Azure Guest Configuration assignment
+2. Create manual assignment or policy pointing to this package
+3. Deploy to customer VMs
+
+Guest Configuration Settings:
+- Configuration Name: InstallDattoRMM
+- Type: Apply and monitor
+- Content URI: True
+- Content Hash: D1C6D4C6570661B87546FA06D8B4E1E3AB9B0FF586FD12A9767C3B429495660F
+
+Manual Assignment Command:
+# Use the Create-ManualGuestConfigAssignment.ps1 script or
+# Create assignment through Azure Portal with above settings
+

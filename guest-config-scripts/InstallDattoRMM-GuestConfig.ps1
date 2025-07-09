@@ -46,9 +46,19 @@ Configuration InstallDattoRMM {
         Script InstallDattoRMM {
             GetScript = {
                 # Check if Datto RMM is installed
-                $dattoService = Get-Service -Name "*Datto*" -ErrorAction SilentlyContinue
-                $dattoProcess = Get-Process -Name "*Datto*" -ErrorAction SilentlyContinue
-                $dattoRegistry = Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*Datto*" }
+                # Look for the specific CagService (Datto RMM service)
+                $dattoService = Get-Service -Name "CagService" -ErrorAction SilentlyContinue
+                $dattoProcess = Get-Process -Name "*Cag*" -ErrorAction SilentlyContinue
+                
+                # Safely check registry for Datto RMM installation
+                $dattoRegistry = $null
+                try {
+                    $dattoRegistry = Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { 
+                        $_.DisplayName -and $_.DisplayName -like "*Datto*" 
+                    }
+                } catch {
+                    # Registry check failed, continue without it
+                }
                 
                 $installed = $false
                 if ($dattoService -or $dattoProcess -or $dattoRegistry) {
@@ -137,9 +147,19 @@ Configuration InstallDattoRMM {
             
             TestScript = {
                 # Check if Datto RMM is properly installed and running
-                $dattoService = Get-Service -Name "*Datto*" -ErrorAction SilentlyContinue
-                $dattoProcess = Get-Process -Name "*Datto*" -ErrorAction SilentlyContinue
-                $dattoRegistry = Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*Datto*" }
+                # Look for the specific CagService (Datto RMM service)
+                $dattoService = Get-Service -Name "CagService" -ErrorAction SilentlyContinue
+                $dattoProcess = Get-Process -Name "*Cag*" -ErrorAction SilentlyContinue
+                
+                # Safely check registry for Datto RMM installation
+                $dattoRegistry = $null
+                try {
+                    $dattoRegistry = Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { 
+                        $_.DisplayName -and $_.DisplayName -like "*Datto*" 
+                    }
+                } catch {
+                    # Registry check failed, continue without it
+                }
                 
                 # Consider it installed if we have either a service, process, or registry entry
                 $isInstalled = ($dattoService -ne $null) -or ($dattoProcess -ne $null) -or ($dattoRegistry -ne $null)

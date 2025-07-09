@@ -1,10 +1,10 @@
 Datto RMM Guest Configuration Package Summary
 ============================================
-Creation Date: 07/09/2025 12:30:04
+Creation Date: 07/09/2025 13:09:45
 Package Name: InstallDattoRMM
 Package Version: 1.0.0
 Package Path: E:\SKH-Folder\Code\IaC-Terraform\guest-config-scripts\Packages\InstallDattoRMM.zip
-Package Size: 680716 bytes
+Package Size: 680816 bytes
 Source MOF: .\Output\localhost.mof
 Validation: PASSED
 

@@ -219,6 +219,7 @@ resource "azurerm_policy_definition" "datto_rmm_agent" {
                     guestConfiguration = {
                       name = "InstallDattoRMM"
                       version = "1.0.0"
+                      assignmentType = "ApplyAndMonitor"
                       contentUri = "[parameters('configurationUri')]"
                       contentHash = var.guest_config_package_hash
                       configurationParameter = [

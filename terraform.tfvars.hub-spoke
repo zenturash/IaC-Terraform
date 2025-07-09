@@ -50,6 +50,11 @@ datto_rmm_config = {
   site_guid = "d5792943-c2e4-40b3-84b8-dccac61f4d35"  # Replace with your actual Datto RMM site GUID
 }
 
+# Customer Configuration for Datto RMM
+customer_config = {
+  customer_name = "Production Hub-Spoke Environment"
+}
+
 # Hub VNet Configuration (Connectivity)
 hub_vnet = {
   enabled             = true

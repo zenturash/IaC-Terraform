@@ -210,6 +210,17 @@ variable "datto_rmm_config" {
   }
 }
 
+# Customer Configuration for Datto RMM
+variable "customer_config" {
+  description = "Customer configuration for Datto RMM installation logging"
+  type = object({
+    customer_name = string
+  })
+  default = {
+    customer_name = "Default Customer"
+  }
+}
+
 variable "vnet_peering" {
   description = "VNet peering configuration options"
   type = object({

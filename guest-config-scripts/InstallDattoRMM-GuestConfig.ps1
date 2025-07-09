@@ -4,32 +4,18 @@
 
 .DESCRIPTION
     This PowerShell DSC configuration installs the Datto RMM agent on Windows machines
-    using a parameterized Site GUID for multi-tenant MSP deployments.
-
-.PARAMETER SiteGuid
-    The Datto RMM Site GUID for the specific customer/tenant
-
-.PARAMETER CustomerName
-    Optional customer name for logging and identification
-
-.EXAMPLE
-    InstallDattoRMM -SiteGuid "ff01b552-a4cb-415e-b3c2-c6581a067479" -CustomerName "Customer A"
+    using Guest Configuration parameters for multi-tenant MSP deployments.
 
 .NOTES
     Author: MSP Automation Team
-    Version: 1.0
+    Version: 2.0
     Created for Azure Guest Configuration deployment
+    
+    For Guest Configuration, parameters are passed via configurationParameter in the policy,
+    not as DSC configuration parameters.
 #>
 
 Configuration InstallDattoRMM {
-    param (
-        [Parameter(Mandatory = $true)]
-        [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
-        [string]$SiteGuid,
-        
-        [Parameter(Mandatory = $false)]
-        [string]$CustomerName = "Default Customer"
-    )
     
     Import-DscResource -ModuleName PSDscResources
     
@@ -45,7 +31,7 @@ Configuration InstallDattoRMM {
             SetScript = {
                 try {
                     New-EventLog -LogName Application -Source "DattoRMM-DSC" -ErrorAction SilentlyContinue
-                    Write-EventLog -LogName Application -Source "DattoRMM-DSC" -EventId 1000 -Message "DattoRMM DSC event log source created for customer: $using:CustomerName"
+                    Write-EventLog -LogName Application -Source "DattoRMM-DSC" -EventId 1000 -Message "DattoRMM DSC event log source created"
                 } catch {
                     # Event source might already exist, continue
                 }
@@ -71,14 +57,23 @@ Configuration InstallDattoRMM {
                 
                 return @{ 
                     Result = if ($installed) { "Installed" } else { "Not Installed" }
-                    SiteGuid = $using:SiteGuid
-                    CustomerName = $using:CustomerName
                 }
             }
             
             SetScript = {
-                $siteGuid = $using:SiteGuid
-                $customerName = $using:CustomerName
+                # Get parameters from Guest Configuration
+                # These will be injected by Azure Guest Configuration at runtime
+                $siteGuid = $Node.SiteGuid
+                $customerName = $Node.CustomerName
+                
+                if (-not $siteGuid) {
+                    throw "SiteGuid parameter is required but not provided"
+                }
+                
+                if (-not $customerName) {
+                    $customerName = "Default Customer"
+                }
+                
                 $url = "https://merlot.rmm.datto.com/download-agent/windows/$siteGuid"
                 $dest = "$env:TEMP\DattoRMMInstaller_$siteGuid.exe"
                 $logSource = "DattoRMM-DSC"
@@ -93,7 +88,7 @@ Configuration InstallDattoRMM {
                     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
                     
                     $webClient = New-Object System.Net.WebClient
-                    $webClient.Headers.Add("User-Agent", "DattoRMM-DSC-Installer/1.0")
+                    $webClient.Headers.Add("User-Agent", "DattoRMM-DSC-Installer/2.0")
                     $webClient.DownloadFile($url, $dest)
                     
                     # Verify download
@@ -151,7 +146,10 @@ Configuration InstallDattoRMM {
                 
                 if ($isInstalled) {
                     try {
-                        Write-EventLog -LogName Application -Source "DattoRMM-DSC" -EventId 1007 -Message "Datto RMM agent validation successful for Site GUID: $using:SiteGuid"
+                        $siteGuid = $Node.SiteGuid
+                        if ($siteGuid) {
+                            Write-EventLog -LogName Application -Source "DattoRMM-DSC" -EventId 1007 -Message "Datto RMM agent validation successful for Site GUID: $siteGuid"
+                        }
                     } catch {
                         # Event log might not be available, continue
                     }

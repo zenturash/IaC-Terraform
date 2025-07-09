@@ -1,38 +1,25 @@
 <#
 .SYNOPSIS
-    Compiles the Datto RMM DSC configuration into MOF files for Guest Configuration
+    Compiles the Datto RMM DSC configuration for Guest Configuration (without hardcoded parameters)
 
 .DESCRIPTION
-    This script compiles the InstallDattoRMM DSC configuration with different Site GUIDs
-    to create MOF files that can be packaged for Azure Guest Configuration deployment.
-
-.PARAMETER SiteGuid
-    The Datto RMM Site GUID for the specific customer/tenant
-
-.PARAMETER CustomerName
-    Optional customer name for identification
+    This script compiles the InstallDattoRMM DSC configuration WITHOUT parameters
+    to create a template MOF file that can accept parameters at runtime via Guest Configuration.
 
 .PARAMETER OutputPath
     Path where the compiled MOF files will be saved
 
 .EXAMPLE
-    .\Compile-DattoRMMConfig.ps1 -SiteGuid "ff01b552-a4cb-415e-b3c2-c6581a067479" -CustomerName "Customer A" -OutputPath "C:\DSC\Output"
+    .\Compile-DattoRMM-GuestConfig.ps1 -OutputPath "C:\DSC\Output"
 
 .NOTES
     Author: MSP Automation Team
-    Version: 1.0
-    Requires: PowerShell 5.1 or later with DSC support
+    Version: 2.0
+    This creates a parameterized MOF for Guest Configuration
 #>
 
 [CmdletBinding()]
 param (
-    [Parameter(Mandatory = $true)]
-    [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
-    [string]$SiteGuid,
-    
-    [Parameter(Mandatory = $false)]
-    [string]$CustomerName = "Default Customer",
-    
     [Parameter(Mandatory = $false)]
     [string]$OutputPath = ".\Output"
 )
@@ -41,14 +28,13 @@ param (
 $ErrorActionPreference = "Stop"
 
 try {
-    Write-Host "=== Datto RMM DSC Configuration Compiler ===" -ForegroundColor Green
-    Write-Host "Site GUID: $SiteGuid" -ForegroundColor Yellow
-    Write-Host "Customer: $CustomerName" -ForegroundColor Yellow
+    Write-Host "=== Datto RMM Guest Configuration Compiler ===" -ForegroundColor Green
     Write-Host "Output Path: $OutputPath" -ForegroundColor Yellow
+    Write-Host "Mode: Guest Configuration (Parameterized)" -ForegroundColor Yellow
     Write-Host ""
 
     # Check if DSC configuration file exists
-    $dscConfigPath = Join-Path $PSScriptRoot "InstallDattoRMM.ps1"
+    $dscConfigPath = Join-Path $PSScriptRoot "InstallDattoRMM-GuestConfig.ps1"
     if (-not (Test-Path $dscConfigPath)) {
         throw "DSC configuration file not found: $dscConfigPath"
     }
@@ -82,7 +68,7 @@ try {
     }
 
     # Load the DSC configuration
-    Write-Host "Loading DSC configuration..." -ForegroundColor Cyan
+    Write-Host "Loading Guest Configuration DSC..." -ForegroundColor Cyan
     . $dscConfigPath
 
     # Verify the configuration function is loaded
@@ -90,9 +76,9 @@ try {
         throw "InstallDattoRMM configuration function not found after loading the script"
     }
 
-    # Compile the configuration
-    Write-Host "Compiling DSC configuration..." -ForegroundColor Cyan
-    $compilationResult = InstallDattoRMM -SiteGuid $SiteGuid -CustomerName $CustomerName -OutputPath $OutputPath
+    # Compile the configuration WITHOUT parameters (for Guest Configuration)
+    Write-Host "Compiling DSC configuration for Guest Configuration..." -ForegroundColor Cyan
+    $compilationResult = InstallDattoRMM -OutputPath $OutputPath
 
     # Verify MOF file was created
     $mofFile = Join-Path $OutputPath "localhost.mof"
@@ -107,52 +93,63 @@ try {
     Write-Host "  Size: $($mofInfo.Length) bytes" -ForegroundColor White
     Write-Host "  Created: $($mofInfo.CreationTime)" -ForegroundColor White
 
-    # Validate MOF content
-    Write-Host "Validating MOF content..." -ForegroundColor Cyan
+    # Validate MOF content for Guest Configuration
+    Write-Host "Validating MOF content for Guest Configuration..." -ForegroundColor Cyan
     $mofContent = Get-Content $mofFile -Raw
     
-    # Check for required elements
+    # Check for required elements (should NOT contain hardcoded values)
     $validationChecks = @(
-        @{ Name = "Site GUID"; Pattern = $SiteGuid; Required = $true },
-        @{ Name = "Customer Name"; Pattern = $CustomerName; Required = $false },
-        @{ Name = "Download URL"; Pattern = "merlot\.rmm\.datto\.com"; Required = $true },
-        @{ Name = "Script Resource"; Pattern = "MSFT_ScriptResource"; Required = $true }
+        @{ Name = "Script Resource"; Pattern = "MSFT_ScriptResource"; Required = $true },
+        @{ Name = "Configuration Name"; Pattern = "InstallDattoRMM"; Required = $true },
+        @{ Name = "No Hardcoded GUID"; Pattern = "ff01b552-a4cb-415e-b3c2-c6581a067479"; Required = $false; ShouldNotExist = $true }
     )
 
     $validationPassed = $true
     foreach ($check in $validationChecks) {
-        if ($mofContent -match $check.Pattern) {
-            Write-Host "  ✓ $($check.Name) found in MOF" -ForegroundColor Green
-        } elseif ($check.Required) {
-            Write-Host "  ✗ $($check.Name) NOT found in MOF" -ForegroundColor Red
-            $validationPassed = $false
+        if ($check.ShouldNotExist) {
+            if ($mofContent -match $check.Pattern) {
+                Write-Host "  ✗ $($check.Name) found in MOF (should not exist for Guest Configuration)" -ForegroundColor Red
+                $validationPassed = $false
+            } else {
+                Write-Host "  ✓ $($check.Name) correctly absent from MOF" -ForegroundColor Green
+            }
         } else {
-            Write-Host "  - $($check.Name) not found (optional)" -ForegroundColor Yellow
+            if ($mofContent -match $check.Pattern) {
+                Write-Host "  ✓ $($check.Name) found in MOF" -ForegroundColor Green
+            } elseif ($check.Required) {
+                Write-Host "  ✗ $($check.Name) NOT found in MOF" -ForegroundColor Red
+                $validationPassed = $false
+            } else {
+                Write-Host "  - $($check.Name) not found (optional)" -ForegroundColor Yellow
+            }
         }
     }
 
     if (-not $validationPassed) {
-        throw "MOF validation failed - required elements missing"
+        throw "MOF validation failed - Guest Configuration requirements not met"
     }
 
     # Create a summary file
-    $summaryFile = Join-Path $OutputPath "compilation-summary.txt"
+    $summaryFile = Join-Path $OutputPath "guest-config-compilation-summary.txt"
     $summary = @"
-Datto RMM DSC Compilation Summary
-================================
+Datto RMM Guest Configuration Compilation Summary
+===============================================
 Compilation Date: $(Get-Date)
-Site GUID: $SiteGuid
-Customer Name: $CustomerName
+Compilation Mode: Guest Configuration (Parameterized)
 MOF File: $($mofInfo.FullName)
 MOF Size: $($mofInfo.Length) bytes
 Validation: PASSED
 
+Guest Configuration Features:
+- No hardcoded Site GUID (parameters passed at runtime)
+- Compatible with Azure Guest Configuration parameter injection
+- Ready for multi-tenant deployment
+
 Next Steps:
 1. Create Guest Configuration package using New-GuestConfigurationPackage
 2. Upload package to Azure Storage Account
-3. Generate SAS token for cross-tenant access
-4. Create Guest Configuration Policy Definition
-5. Assign policy to target subscriptions/VMs
+3. Use this package with Guest Configuration policies
+4. Parameters will be injected at runtime via configurationParameter
 
 "@
 
@@ -160,22 +157,22 @@ Next Steps:
     Write-Host "Compilation summary saved to: $summaryFile" -ForegroundColor Cyan
 
     Write-Host ""
-    Write-Host "=== Compilation Completed Successfully ===" -ForegroundColor Green
-    Write-Host "MOF file ready for Guest Configuration packaging" -ForegroundColor Green
+    Write-Host "=== Guest Configuration Compilation Completed Successfully ===" -ForegroundColor Green
+    Write-Host "MOF file ready for Guest Configuration packaging (parameterized)" -ForegroundColor Green
 
     # Return compilation info
     return @{
         Success = $true
         MofFile = $mofInfo.FullName
-        SiteGuid = $SiteGuid
-        CustomerName = $CustomerName
         OutputPath = $OutputPath
         SummaryFile = $summaryFile
+        Mode = "GuestConfiguration"
+        Parameterized = $true
     }
 
 } catch {
     Write-Host ""
-    Write-Host "=== Compilation Failed ===" -ForegroundColor Red
+    Write-Host "=== Guest Configuration Compilation Failed ===" -ForegroundColor Red
     Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "Line: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
     Write-Host ""
@@ -185,5 +182,6 @@ Next Steps:
         Success = $false
         Error = $_.Exception.Message
         Line = $_.InvocationInfo.ScriptLineNumber
+        Mode = "GuestConfiguration"
     }
 }

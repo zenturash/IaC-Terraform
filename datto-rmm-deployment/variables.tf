@@ -30,6 +30,16 @@ variable "datto_rmm_config" {
   }
 }
 
+variable "customer_config" {
+  description = "Customer configuration for Guest Configuration logging"
+  type = object({
+    customer_name = string
+  })
+  default = {
+    customer_name = "Default Customer"
+  }
+}
+
 # Optional Variables with Defaults
 variable "location" {
   description = "Azure region for policy deployment"

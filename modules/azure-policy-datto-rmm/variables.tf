@@ -41,7 +41,31 @@ variable "policy_display_name" {
 variable "policy_description" {
   description = "Description of the Azure Policy definition"
   type        = string
-  default     = "Automatically deploys Datto RMM agent on Windows virtual machines for monitoring and management"
+  default     = "Automatically deploys Datto RMM agent on Windows virtual machines using Azure Guest Configuration"
+}
+
+variable "guest_config_package_uri" {
+  description = "URI to the Guest Configuration package with SAS token"
+  type        = string
+  default     = "https://zenturamspguestconfig.blob.core.windows.net/guest-configurations/InstallDattoRMM.zip?sp=rl&st=2025-07-08T14:33:32Z&se=2035-08-09T22:33:32Z&spr=https&sv=2024-11-04&sr=c&sig=rvcknUpe7QAkUOGYTHh6aKMrYNK0ujOMQacz19Osc24%3D"
+  sensitive   = true
+}
+
+variable "guest_config_package_hash" {
+  description = "SHA256 hash of the Guest Configuration package for content validation"
+  type        = string
+  default     = "36580CF2C585556BF43F1CDEA9B5AB620E9EBE45EA5376800A91F1DFE31DCE3F"
+  
+  validation {
+    condition     = can(regex("^[A-F0-9]{64}$", var.guest_config_package_hash))
+    error_message = "Package hash must be a valid 64-character SHA256 hash in uppercase hexadecimal format."
+  }
+}
+
+variable "customer_name" {
+  description = "Customer name for Datto RMM installation logging"
+  type        = string
+  default     = "Default Customer"
 }
 
 variable "assignment_name" {

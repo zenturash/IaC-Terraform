@@ -15,7 +15,6 @@ terraform {
 # Configure the Microsoft Azure Provider (Default)
 provider "azurerm" {
   features {}
-  skip_provider_registration = true
 }
 
 # Data source for current client configuration
@@ -30,6 +29,9 @@ module "datto_rmm_policies" {
   site_guid       = var.datto_rmm_config.site_guid
   subscription_id = each.value
   location        = var.location
+
+  # Customer configuration
+  customer_name = var.customer_config.customer_name
 
   # Policy configuration - use custom names if provided, otherwise use defaults
   policy_name                = try(var.policy_config[each.key].policy_name, "deploy-datto-rmm-agent-${each.key}")

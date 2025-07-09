@@ -15,6 +15,11 @@ datto_rmm_config = {
   site_guid = "ff01b552-a4cb-415e-b3c2-c6581a067479"  # Replace with your actual Datto RMM site GUID
 }
 
+# Customer Configuration (Optional - for Guest Configuration logging)
+customer_config = {
+  customer_name = "Zentura Internal IT"  # Customer name for Datto RMM installation logging
+}
+
 # Azure Region
 location = "West Europe"
 
@@ -95,20 +100,27 @@ policy_config = {
 #    - Use PowerShell commands from outputs for manual operations
 #
 # ========================================
-# WHAT THIS DEPLOYMENT CREATES
+# WHAT THIS DEPLOYMENT CREATES (GUEST CONFIGURATION)
 # ========================================
 #
 # Per Subscription:
-# - 1x Azure Policy Definition (Custom)
+# - 1x Azure Policy Definition (Custom - Guest Configuration)
 # - 1x Azure Policy Assignment (Subscription scope)
-# - 2x Role Assignments (VM Contributor + Contributor for policy identity)
+# - 2x Role Assignments (Guest Configuration Resource Contributor + VM Contributor)
 # - 1x Remediation task (automatic)
 #
 # Example for 2 subscriptions:
-# - 2x Policy Definitions
+# - 2x Policy Definitions (Guest Configuration)
 # - 2x Policy Assignments  
-# - 4x Role Assignments
+# - 4x Role Assignments (Guest Configuration permissions)
 # - 2x Remediation tasks
+#
+# GUEST CONFIGURATION BENEFITS:
+# - No VM extension conflicts
+# - Better compliance reporting
+# - DSC-based installation (more robust)
+# - Runtime parameter passing (Site GUID per tenant)
+# - Cross-tenant deployment via SAS token
 #
 # ========================================
 # COST IMPACT

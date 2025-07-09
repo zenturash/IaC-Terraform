@@ -13,7 +13,6 @@ terraform {
 # Configure the Microsoft Azure Provider (Default)
 provider "azurerm" {
   features {}
-  skip_provider_registration = true
 }
 
 # Configure Azure Provider for Hub Subscription (if different)
@@ -21,7 +20,6 @@ provider "azurerm" {
   alias           = "hub"
   subscription_id = var.subscriptions.hub
   features {}
-  skip_provider_registration = true
 }
 
 # Configure Azure Provider for Spoke Subscription (default)
@@ -29,7 +27,6 @@ provider "azurerm" {
   alias           = "spoke"
   subscription_id = length(var.subscriptions.spoke) > 0 ? values(var.subscriptions.spoke)[0] : null
   features {}
-  skip_provider_registration = true
 }
 
 # Local values for common tags and configuration
@@ -345,6 +342,7 @@ module "datto_rmm_policy_single" {
   policy_display_name        = "Deploy Datto RMM Agent on Windows VMs (Single VNet)"
   assignment_name            = "assign-datto-rmm-agent-single"
   assignment_display_name    = "Assign Datto RMM Agent Policy (Single VNet)"
+  customer_name              = var.customer_config.customer_name
   create_remediation_task    = true
 
   tags = merge(local.common_tags, {
@@ -376,6 +374,7 @@ module "datto_rmm_policy_spoke" {
   policy_display_name        = "Deploy Datto RMM Agent on Windows VMs (${title(each.key)} Spoke)"
   assignment_name            = "assign-datto-rmm-agent-${each.key}"
   assignment_display_name    = "Assign Datto RMM Agent Policy (${title(each.key)} Spoke)"
+  customer_name              = var.customer_config.customer_name
   create_remediation_task    = true
 
   tags = merge(local.common_tags, {

@@ -32,82 +32,6 @@ provider "azurerm" {
 # Data source for current client configuration (needed for subscription ID)
 data "azurerm_client_config" "current" {}
 
-# STEP 1: Deploy Datto RMM Policies FIRST (before any infrastructure)
-# This ensures Guest Configuration extension gets installed before VMs are created
-
-# Datto RMM Policy (Single VNet mode) - Deploy FIRST
-module "datto_rmm_policy_single" {
-  count  = var.architecture_mode == "single-vnet" && var.deploy_components.datto_policy ? 1 : 0
-  source = "./modules/azure-policy-datto-rmm"
-
-  # Required variables
-  site_guid       = var.datto_rmm_config.site_guid
-  subscription_id = data.azurerm_client_config.current.subscription_id
-  location        = var.location
-
-  # Optional customization
-  policy_name                = "deploy-datto-rmm-agent-single"
-  policy_display_name        = "Deploy Datto RMM Agent on Windows VMs (Single VNet)"
-  assignment_name            = "assign-datto-rmm-agent-single"
-  assignment_display_name    = "Assign Datto RMM Agent Policy (Single VNet)"
-  customer_name              = var.customer_config.customer_name
-  create_remediation_task    = true
-
-  tags = merge(var.global_tags, {
-    creation_date = formatdate("YYYY-MM-DD", timestamp())
-    tier = "policy"
-    architecture = var.architecture_mode
-    component = "datto-rmm"
-  })
-}
-
-# Datto RMM Policy (Hub-Spoke mode - Deploy to each spoke subscription) - Deploy FIRST
-module "datto_rmm_policy_spoke" {
-  for_each = var.architecture_mode == "hub-spoke" && var.deploy_components.datto_policy ? var.subscriptions.spoke : {}
-  source   = "./modules/azure-policy-datto-rmm"
-
-  providers = {
-    azurerm = azurerm.spoke
-  }
-
-  # Required variables
-  site_guid       = var.datto_rmm_config.site_guid
-  subscription_id = each.value
-  location        = var.location
-
-  # Optional customization
-  policy_name                = "deploy-datto-rmm-agent-${each.key}"
-  policy_display_name        = "Deploy Datto RMM Agent on Windows VMs (${title(each.key)} Spoke)"
-  assignment_name            = "assign-datto-rmm-agent-${each.key}"
-  assignment_display_name    = "Assign Datto RMM Agent Policy (${title(each.key)} Spoke)"
-  customer_name              = var.customer_config.customer_name
-  create_remediation_task    = true
-
-  tags = merge(var.global_tags, {
-    creation_date = formatdate("YYYY-MM-DD", timestamp())
-    tier = "policy"
-    architecture = var.architecture_mode
-    component = "datto-rmm"
-    spoke_name = each.key
-    subscription_id = each.value
-  })
-}
-
-# STEP 2: Wait for policy propagation (2 minutes)
-# This allows time for the Guest Configuration extension to be installed on existing VMs
-resource "time_sleep" "policy_propagation" {
-  count           = var.deploy_components.datto_policy ? 1 : 0
-  create_duration = "120s"  # 2 minutes
-
-  depends_on = [
-    module.datto_rmm_policy_single,
-    module.datto_rmm_policy_spoke
-  ]
-
-  triggers = {
-    policy_deployment_time = timestamp()
-  }
-}
 
 # Local values for common tags and configuration
 locals {
@@ -146,7 +70,7 @@ locals {
   }
 }
 
-# STEP 3: Deploy Networking Infrastructure (after policy propagation)
+# STEP 1: Deploy Networking Infrastructure
 
 # Single VNet Architecture (Original/Backward Compatibility)
 module "single_networking" {
@@ -288,10 +212,9 @@ module "vms_single" {
     architecture = var.architecture_mode
   })
 
-  # STEP 4: VMs deployed LAST - after policy propagation and networking
+  # VMs deployed after networking
   depends_on = [
-    module.single_networking,
-    time_sleep.policy_propagation
+    module.single_networking
   ]
 }
 
@@ -346,11 +269,10 @@ module "vms_spoke" {
     spoke_name = each.value.spoke_name
   })
 
-  # STEP 4: VMs deployed LAST - after policy propagation and networking
+  # VMs deployed after networking
   depends_on = [
     module.spoke_networking, 
-    module.hub_networking,
-    time_sleep.policy_propagation
+    module.hub_networking
   ]
 }
 

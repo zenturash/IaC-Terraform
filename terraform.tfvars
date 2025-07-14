@@ -28,20 +28,9 @@ subscriptions = {
 
 # Component Deployment Control - Test Configuration
 deploy_components = {
-  vpn_gateway  = false   # Disable VPN for initial test (can enable later)
-  vms          = true   # Deploy test VM in spoke
-  peering      = true   # Enable cross-subscription VNet peering
-  datto_policy = true   # Enable Datto RMM policy deployment
-}
-
-# Datto RMM Configuration
-datto_rmm_config = {
-  site_guid = "d5792943-c2e4-40b3-84b8-dccac61f4d35"  # Replace with your actual Datto RMM site GUID
-}
-
-# Customer Configuration for Datto RMM
-customer_config = {
-  customer_name = "Zentura Test Environment"
+  vpn_gateway = false   # Disable VPN for initial test (can enable later)
+  vms         = true    # Deploy test VM in spoke
+  peering     = true    # Enable cross-subscription VNet peering
 }
 
 # Hub VNet Configuration (Deployed in Hub Subscription)
@@ -97,10 +86,10 @@ vpn_configuration = {
   }
 }
 
-# Test Virtual Machine (Deployed in Spoke Subscription)
+# Test Virtual Machines (Deployed in Spoke Subscription)
 virtual_machines = {
   "test-vm-01" = {
-    vm_size             = "Standard_B2s"        # Larger VM for Datto RMM installation
+    vm_size             = "Standard_B2s"        # Standard VM size for testing
     subnet_name         = "subnet-test"
     resource_group_name = "rg-test-vm"
     enable_public_ip    = true                  # Enable for easy testing access
@@ -120,8 +109,8 @@ virtual_machines = {
       }
     ]
   }
-    "test-vm-02" = {
-    vm_size             = "Standard_B2s"        # Larger VM for Datto RMM installation
+  "test-vm-02" = {
+    vm_size             = "Standard_B2s"        # Standard VM size for testing
     subnet_name         = "subnet-test"
     resource_group_name = "rg-test-vm2"
     enable_public_ip    = true                  # Enable for easy testing access

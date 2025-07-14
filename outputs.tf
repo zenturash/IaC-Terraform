@@ -186,58 +186,6 @@ output "vpn_summary" {
   ) : null
 }
 
-# Datto RMM Policy Initiative Information
-output "datto_rmm_policy" {
-  description = "Datto RMM policy initiative deployment information"
-  sensitive   = true
-  value = var.deploy_components.datto_policy ? {
-    single_vnet_policy = var.architecture_mode == "single-vnet" && length(module.datto_rmm_policy_single) > 0 ? {
-      policy_initiative_id     = module.datto_rmm_policy_single[0].policy_initiative_id
-      policy_assignment_id     = module.datto_rmm_policy_single[0].policy_assignment_id
-      managed_identity_id      = module.datto_rmm_policy_single[0].managed_identity_principal_id
-      remediation_task_id      = module.datto_rmm_policy_single[0].remediation_task_id
-      compliance_check_command = module.datto_rmm_policy_single[0].compliance_check_command
-      policy_portal_url        = module.datto_rmm_policy_single[0].policy_portal_url
-      configuration_summary    = module.datto_rmm_policy_single[0].configuration_summary
-      initiative_structure     = module.datto_rmm_policy_single[0].initiative_structure
-      guest_config_name        = module.datto_rmm_policy_single[0].guest_config_name
-    } : null
-    
-    spoke_policies = var.architecture_mode == "hub-spoke" ? {
-      for spoke_name, policy_module in module.datto_rmm_policy_spoke : spoke_name => {
-        policy_initiative_id     = policy_module.policy_initiative_id
-        policy_assignment_id     = policy_module.policy_assignment_id
-        managed_identity_id      = policy_module.managed_identity_principal_id
-        remediation_task_id      = policy_module.remediation_task_id
-        compliance_check_command = policy_module.compliance_check_command
-        policy_portal_url        = policy_module.policy_portal_url
-        configuration_summary    = policy_module.configuration_summary
-        initiative_structure     = policy_module.initiative_structure
-        guest_config_name        = policy_module.guest_config_name
-      }
-    } : {}
-    
-    deployment_status = {
-      enabled = true
-      architecture_mode = var.architecture_mode
-      deployment_method = "Policy Initiative"
-      total_initiatives_deployed = var.architecture_mode == "single-vnet" ? 1 : length(var.subscriptions.spoke)
-      remediation_enabled = true
-      guest_configuration_enabled = true
-    }
-  } : {
-    single_vnet_policy = null
-    spoke_policies = {}
-    deployment_status = {
-      enabled = false
-      architecture_mode = var.architecture_mode
-      deployment_method = "None"
-      total_initiatives_deployed = 0
-      remediation_enabled = false
-      guest_configuration_enabled = false
-    }
-  }
-}
 
 # Deployment Summary
 output "deployment_summary" {
@@ -248,10 +196,9 @@ output "deployment_summary" {
     
     # Component deployment status
     components_deployed = {
-      vpn_gateway  = var.deploy_components.vpn_gateway
-      vms          = var.deploy_components.vms
-      peering      = var.deploy_components.peering && var.architecture_mode == "hub-spoke"
-      datto_policy = var.deploy_components.datto_policy
+      vpn_gateway = var.deploy_components.vpn_gateway
+      vms         = var.deploy_components.vms
+      peering     = var.deploy_components.peering && var.architecture_mode == "hub-spoke"
     }
     
     # Network information

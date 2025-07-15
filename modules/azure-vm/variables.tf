@@ -16,6 +16,17 @@ variable "subnet_id" {
 # CORE VM CONFIGURATION (With Smart Defaults)
 # ============================================================================
 
+variable "os_type" {
+  description = "Operating system type (Windows or Linux)"
+  type        = string
+  default     = "Windows"
+  
+  validation {
+    condition     = contains(["Windows", "Linux"], var.os_type)
+    error_message = "OS type must be either 'Windows' or 'Linux'."
+  }
+}
+
 variable "vm_name" {
   description = "Name of the virtual machine. If null, will auto-generate with random suffix"
   type        = string
@@ -65,6 +76,27 @@ variable "admin_password" {
     condition     = var.admin_password == null || (length(var.admin_password) >= 12 && length(var.admin_password) <= 123)
     error_message = "Admin password must be between 12 and 123 characters when specified."
   }
+}
+
+# ============================================================================
+# LINUX AUTHENTICATION CONFIGURATION
+# ============================================================================
+
+variable "ssh_public_key" {
+  description = "SSH public key for Linux VM authentication. Can be inline key or file path"
+  type        = string
+  default     = null
+  
+  validation {
+    condition = var.ssh_public_key == null || length(var.ssh_public_key) > 0
+    error_message = "SSH public key cannot be empty when specified."
+  }
+}
+
+variable "disable_password_authentication" {
+  description = "Disable password authentication for Linux VMs (SSH key only)"
+  type        = bool
+  default     = false
 }
 
 # ============================================================================
@@ -394,4 +426,38 @@ variable "user_assigned_identity_ids" {
   description = "List of user assigned identity IDs"
   type        = list(string)
   default     = []
+}
+
+# ============================================================================
+# CROSS-VARIABLE VALIDATION
+# ============================================================================
+
+# Ensure Linux VMs have appropriate authentication
+variable "validate_linux_auth" {
+  description = "Internal validation variable - do not set manually"
+  type        = bool
+  default     = true
+  
+  validation {
+    condition = var.os_type == "Linux" ? (
+      var.ssh_public_key != null || var.admin_password != null
+    ) : true
+    error_message = "Linux VMs require either SSH public key or password authentication (or both)."
+  }
+}
+
+# Ensure Windows-specific settings are only used with Windows VMs
+variable "validate_windows_settings" {
+  description = "Internal validation variable - do not set manually"
+  type        = bool
+  default     = true
+  
+  validation {
+    condition = var.os_type == "Linux" ? (
+      var.hotpatching_enabled == false && 
+      var.enable_automatic_updates == true &&
+      var.timezone == "UTC"
+    ) : true
+    error_message = "Windows-specific settings (hotpatching, automatic updates, timezone) should use defaults for Linux VMs."
+  }
 }

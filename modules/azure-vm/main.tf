@@ -42,20 +42,43 @@ locals {
   # Resource group name with suffix if creating new RG
   resource_group_name = var.create_resource_group ? "${var.resource_group_name}${local.suffix}" : var.resource_group_name
   
+  # OS-specific image defaults
+  os_image_defaults = {
+    Windows = {
+      publisher = "MicrosoftWindowsServer"
+      offer     = "WindowsServer"
+      sku       = "2025-datacenter-azure-edition"
+    }
+    Linux = {
+      publisher = "Canonical"
+      offer     = "0001-com-ubuntu-server-jammy"
+      sku       = "22_04-lts-gen2"
+    }
+  }
+  
+  # Determine image configuration (use provided or OS defaults)
+  image_publisher = var.image_publisher != "MicrosoftWindowsServer" ? var.image_publisher : local.os_image_defaults[var.os_type].publisher
+  image_offer     = var.image_offer != "WindowsServer" ? var.image_offer : local.os_image_defaults[var.os_type].offer
+  image_sku       = var.image_sku != "2025-datacenter-azure-edition" ? var.image_sku : local.os_image_defaults[var.os_type].sku
+  
+  # Connection IP for outputs
+  connection_ip = var.enable_public_ip ? azurerm_public_ip.main[0].ip_address : azurerm_network_interface.main.private_ip_address
+  
   # Comprehensive tagging
   base_tags = var.enable_auto_tagging ? {
     vm_name           = local.vm_name
     vm_size           = var.vm_size
-    os_type           = "${var.image_publisher}-${var.image_offer}-${var.image_sku}"
+    os_type           = var.os_type
+    os_image          = "${local.image_publisher}-${local.image_offer}-${local.image_sku}"
     os_disk_type      = var.os_disk_type
     creation_date     = formatdate("YYYY-MM-DD", timestamp())
     creation_time     = formatdate("YYYY-MM-DD hh:mm:ss ZZZ", timestamp())
     creation_method   = "OpenTofu"
     admin_username    = var.admin_username
     location          = var.location
-    patch_mode        = var.patch_mode
     public_ip_enabled = var.enable_public_ip
     auto_generated    = var.vm_name == null || var.admin_password == null
+    auth_method       = var.os_type == "Linux" ? (var.ssh_public_key != null ? "SSH" : "Password") : "Password"
   } : {}
   
   # Merge all tags
@@ -159,10 +182,12 @@ resource "azurerm_network_interface_security_group_association" "main" {
 }
 
 # ============================================================================
-# VIRTUAL MACHINE
+# VIRTUAL MACHINES (OS-SPECIFIC)
 # ============================================================================
 
+# Windows Virtual Machine
 resource "azurerm_windows_virtual_machine" "main" {
+  count               = var.os_type == "Windows" ? 1 : 0
   name                = local.vm_name
   location            = local.resource_group.location
   resource_group_name = local.resource_group.name
@@ -171,14 +196,14 @@ resource "azurerm_windows_virtual_machine" "main" {
   admin_password      = local.admin_password
   tags                = local.common_tags
 
-  # VM Configuration
-  patch_mode                = var.patch_mode
-  hotpatching_enabled       = var.hotpatching_enabled
-  timezone                  = var.timezone
-  enable_automatic_updates  = var.enable_automatic_updates
-  availability_set_id       = var.availability_set_id
+  # Windows-specific VM Configuration
+  patch_mode                   = var.patch_mode
+  hotpatching_enabled          = var.hotpatching_enabled
+  timezone                     = var.timezone
+  enable_automatic_updates     = var.enable_automatic_updates
+  availability_set_id          = var.availability_set_id
   proximity_placement_group_id = var.proximity_placement_group_id
-  zone                      = var.zone
+  zone                         = var.zone
 
   # Network Interface
   network_interface_ids = [
@@ -195,11 +220,78 @@ resource "azurerm_windows_virtual_machine" "main" {
 
   # VM Image Configuration
   source_image_reference {
-    publisher = var.image_publisher
-    offer     = var.image_offer
-    sku       = var.image_sku
+    publisher = local.image_publisher
+    offer     = local.image_offer
+    sku       = local.image_sku
     version   = var.image_version
   }
+
+  # Boot Diagnostics
+  dynamic "boot_diagnostics" {
+    for_each = var.boot_diagnostics_enabled ? [1] : []
+    content {
+      # Uses managed storage account (no storage_account_uri needed)
+    }
+  }
+
+  # Managed Identity
+  dynamic "identity" {
+    for_each = var.identity_type != "None" ? [1] : []
+    content {
+      type         = var.identity_type
+      identity_ids = var.identity_type == "UserAssigned" || var.identity_type == "SystemAssigned, UserAssigned" ? var.user_assigned_identity_ids : null
+    }
+  }
+}
+
+# Linux Virtual Machine
+resource "azurerm_linux_virtual_machine" "main" {
+  count               = var.os_type == "Linux" ? 1 : 0
+  name                = local.vm_name
+  location            = local.resource_group.location
+  resource_group_name = local.resource_group.name
+  size                = var.vm_size
+  admin_username      = var.admin_username
+  tags                = local.common_tags
+
+  # Linux-specific configuration
+  disable_password_authentication = var.disable_password_authentication
+  availability_set_id             = var.availability_set_id
+  proximity_placement_group_id    = var.proximity_placement_group_id
+  zone                            = var.zone
+
+  # Network Interface
+  network_interface_ids = [
+    azurerm_network_interface.main.id,
+  ]
+
+  # OS Disk Configuration
+  os_disk {
+    name                 = local.os_disk_name
+    caching              = var.os_disk_caching
+    storage_account_type = var.os_disk_type
+    disk_size_gb         = var.os_disk_size_gb
+  }
+
+  # VM Image Configuration
+  source_image_reference {
+    publisher = local.image_publisher
+    offer     = local.image_offer
+    sku       = local.image_sku
+    version   = var.image_version
+  }
+
+  # SSH Key Configuration (if provided)
+  dynamic "admin_ssh_key" {
+    for_each = var.ssh_public_key != null ? [1] : []
+    content {
+      username   = var.admin_username
+      public_key = var.ssh_public_key
+    }
+  }
+
+  # Password authentication (if not disabled and password provided)
+  admin_password = !var.disable_password_authentication ? local.admin_password : null
 
   # Boot Diagnostics
   dynamic "boot_diagnostics" {

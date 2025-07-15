@@ -1,16 +1,18 @@
 # Azure VM OpenTofu Module
 
-A highly flexible and secure OpenTofu module for deploying Azure Windows Virtual Machines with comprehensive configuration options and sensible defaults.
+A highly flexible and secure OpenTofu module for deploying both **Windows and Linux** Azure Virtual Machines with comprehensive configuration options, explicit authentication requirements, and configurable defaults.
 
 ## 🚀 Key Features
 
-✅ **Minimal Required Input** - Only `subnet_id` and `resource_group_name` required, everything else has smart defaults  
-✅ **Security-First Approach** - No automatic NSG rules, users must explicitly define security  
-✅ **Maximum Flexibility** - Every hardcoded value is now configurable with defaults  
-✅ **Auto-Generation** - VM names, passwords, and resource names auto-generated for uniqueness  
+✅ **Dual OS Support** - Deploy both Windows and Linux VMs with a single module  
+✅ **Security-First Authentication** - Explicit credentials required, no auto-generation  
+✅ **Minimal Required Input** - Only `subnet_id`, `resource_group_name`, `admin_username` required  
+✅ **Flexible Authentication** - SSH keys, passwords, or both for Linux VMs  
+✅ **Configurable Image Defaults** - Easily customize OS images for your organization  
+✅ **Maximum Flexibility** - Every value is configurable with sensible defaults  
 ✅ **Multiple Instance Support** - Deploy multiple VMs without conflicts  
 ✅ **NSG Independence** - NSG creation is independent of public IP configuration  
-✅ **Comprehensive Outputs** - Detailed outputs including connection information  
+✅ **Comprehensive Outputs** - OS-aware connection information and detailed outputs  
 
 ## 🔧 Requirements
 
@@ -20,80 +22,251 @@ A highly flexible and secure OpenTofu module for deploying Azure Windows Virtual
 
 ## 📋 Quick Start
 
-### Minimal Usage (Only required variables)
+### Windows VM (Minimal Usage)
 
 ```hcl
-module "simple_vm" {
+module "windows_vm" {
   source = "./modules/azure-vm"
   
   subnet_id           = "/subscriptions/your-sub/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-main/subnets/subnet-app"
-  resource_group_name = "rg-vm-prod"
+  resource_group_name = "rg-vm-windows"
+  admin_username      = "winadmin"
+  admin_password      = "SecurePassword123!"
+  # os_type = "Windows" (default)
 }
 ```
 
-**What you get:**
-- VM with auto-generated name (e.g., `vm-a1b2c3d4`)
-- Auto-generated secure password (output as sensitive)
-- Windows Server 2025 Datacenter Azure Edition
-- Standard_B2s VM size
-- Premium_LRS OS disk
-- No public IP (private only)
-- No NSG (uses subnet-level security)
-- Resource group: `rg-vm-prod-a1b2c3d4` (with random suffix)
+### Linux VM with SSH Key
+
+```hcl
+module "linux_vm" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = "/subscriptions/your-sub/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-main/subnets/subnet-app"
+  resource_group_name = "rg-vm-linux"
+  os_type             = "Linux"
+  admin_username      = "azureuser"
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")
+  disable_password_authentication = true
+}
+```
+
+### Linux VM with Password
+
+```hcl
+module "linux_password_vm" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = "/subscriptions/your-sub/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-main/subnets/subnet-app"
+  resource_group_name = "rg-vm-linux-pwd"
+  os_type             = "Linux"
+  admin_username      = "azureuser"
+  admin_password      = "SecureLinuxPassword123!"
+  disable_password_authentication = false
+}
+```
+
+## 🖥️ Operating System Support
+
+### Windows VMs
+- **Default Image**: Windows Server 2025 Datacenter Azure Edition
+- **Authentication**: Username + Password (both required)
+- **Connection**: RDP (port 3389)
+- **Features**: Patch management, hotpatching, timezone configuration
+
+### Linux VMs  
+- **Default Image**: Ubuntu 22.04 LTS Gen2
+- **Authentication Options**:
+  - SSH Key Only (recommended)
+  - Password Only
+  - SSH Key + Password (hybrid)
+- **Connection**: SSH (port 22)
+- **Features**: SSH key management, password authentication control
+
+## 🔐 Authentication Examples
+
+### Windows VM Authentication
+```hcl
+module "windows_server" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-windows-server"
+  admin_username      = "winadmin"      # Required
+  admin_password      = "SecurePass123!" # Required
+  # os_type = "Windows" (default)
+}
+```
+
+### Linux SSH Key Authentication (Recommended)
+```hcl
+module "linux_ssh" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-linux-ssh"
+  os_type             = "Linux"
+  admin_username      = "azureuser"                    # Required
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")     # Required
+  disable_password_authentication = true              # SSH only
+}
+```
+
+### Linux Password Authentication
+```hcl
+module "linux_password" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-linux-password"
+  os_type             = "Linux"
+  admin_username      = "azureuser"                    # Required
+  admin_password      = "SecureLinuxPass123!"         # Required
+  disable_password_authentication = false             # Allow password
+}
+```
+
+### Linux Hybrid Authentication (SSH + Password)
+```hcl
+module "linux_hybrid" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-linux-hybrid"
+  os_type             = "Linux"
+  admin_username      = "azureuser"                    # Required
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")     # SSH access
+  admin_password      = "SecureLinuxPass123!"         # Password access
+  disable_password_authentication = false             # Allow both
+}
+```
+
+## 🎨 Image Customization
+
+### Using Default Images
+```hcl
+# Windows: Uses Windows Server 2025 Datacenter Azure Edition
+module "windows_default" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-windows"
+  admin_username      = "winadmin"
+  admin_password      = "SecurePass123!"
+}
+
+# Linux: Uses Ubuntu 22.04 LTS Gen2
+module "linux_default" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-linux"
+  os_type             = "Linux"
+  admin_username      = "azureuser"
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")
+}
+```
+
+### Customizing Individual Image Components
+```hcl
+module "custom_linux" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-custom-linux"
+  os_type             = "Linux"
+  admin_username      = "azureuser"
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")
+  
+  # Override individual image components
+  image_publisher = "RedHat"
+  image_offer     = "RHEL"
+  image_sku       = "9-lvm-gen2"
+}
+```
+
+### Organizational Image Defaults
+```hcl
+module "org_standard_windows" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-org-windows"
+  admin_username      = "winadmin"
+  admin_password      = "SecurePass123!"
+  
+  # Override organizational Windows defaults
+  windows_image_defaults = {
+    publisher = "MicrosoftWindowsServer"
+    offer     = "WindowsServer"
+    sku       = "2022-datacenter-azure-edition"  # Use 2022 instead of 2025
+  }
+}
+
+module "org_standard_linux" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.subnet_id
+  resource_group_name = "rg-org-linux"
+  os_type             = "Linux"
+  admin_username      = "azureuser"
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")
+  
+  # Override organizational Linux defaults
+  linux_image_defaults = {
+    publisher = "RedHat"
+    offer     = "RHEL"
+    sku       = "9-lvm-gen2"  # Use RHEL instead of Ubuntu
+  }
+}
+```
 
 ## 🛡️ Security Examples
 
-### 1. VM without NSG (Recommended for Internal VMs)
+### 1. Internal VMs (No NSG - Recommended)
 
 ```hcl
-# Most common pattern - no NSG, relies on subnet-level security
-module "internal_vm" {
+# Windows internal server
+module "internal_windows" {
   source = "./modules/azure-vm"
   
-  subnet_id = var.internal_subnet_id
-  vm_name   = "app-server-01"
-  # create_nsg = false (this is the default)
+  subnet_id           = var.internal_subnet_id
+  resource_group_name = "rg-internal-windows"
+  vm_name             = "app-server-01"
+  admin_username      = "winadmin"
+  admin_password      = "SecurePass123!"
+  # create_nsg = false (default - uses subnet-level security)
+}
+
+# Linux internal server
+module "internal_linux" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.internal_subnet_id
+  resource_group_name = "rg-internal-linux"
+  os_type             = "Linux"
+  vm_name             = "api-server-01"
+  admin_username      = "azureuser"
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")
+  # create_nsg = false (default - uses subnet-level security)
 }
 ```
 
-**Security posture:**
-- No NSG created at VM level
-- Relies entirely on subnet-level Network Security Groups
-- Most secure and recommended approach for internal VMs
-- Simpler management - security rules managed at subnet level
-
-### 2. Public VM without NSG (Uses Subnet Security)
+### 2. Public VMs with Explicit Security Rules
 
 ```hcl
-# Public VM that relies on subnet NSG for security
-module "public_vm_no_nsg" {
+# Windows web server with RDP access
+module "windows_web" {
   source = "./modules/azure-vm"
   
-  subnet_id        = var.public_subnet_id
-  vm_name          = "public-server-01"
-  enable_public_ip = true
-  # create_nsg = false (default - no VM-level NSG)
-}
-```
-
-**Security posture:**
-- VM has public IP but no VM-level NSG
-- Security controlled by subnet-level NSG rules
-- Good for scenarios where subnet already has appropriate rules
-- Reduces NSG sprawl and management overhead
-
-### Public VM with Explicit NSG Rules
-
-```hcl
-module "web_server" {
-  source = "./modules/azure-vm"
+  subnet_id           = var.web_subnet_id
+  resource_group_name = "rg-windows-web"
+  vm_name             = "web-server-01"
+  admin_username      = "winadmin"
+  admin_password      = "SecurePass123!"
+  enable_public_ip    = true
+  create_nsg          = true
   
-  subnet_id        = var.web_subnet_id
-  vm_name          = "web-server-01"
-  enable_public_ip = true
-  create_nsg       = true
-  
-  # Users must explicitly define ALL security rules
   nsg_rules = [
     {
       name                       = "AllowHTTPS"
@@ -119,20 +292,19 @@ module "web_server" {
     }
   ]
 }
-```
 
-### Multiple VMs (No Conflicts)
-
-```hcl
-# Web tier
-module "web_vm_01" {
+# Linux web server with SSH access
+module "linux_web" {
   source = "./modules/azure-vm"
   
-  subnet_id        = var.web_subnet_id
-  vm_name          = "web-01"
-  enable_public_ip = true
-  create_nsg       = true
-  vm_size          = "Standard_D2s_v3"
+  subnet_id           = var.web_subnet_id
+  resource_group_name = "rg-linux-web"
+  os_type             = "Linux"
+  vm_name             = "nginx-server-01"
+  admin_username      = "azureuser"
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")
+  enable_public_ip    = true
+  create_nsg          = true
   
   nsg_rules = [
     {
@@ -145,29 +317,16 @@ module "web_vm_01" {
       destination_port_range     = "443"
       source_address_prefix      = "*"
       destination_address_prefix = "*"
-    }
-  ]
-}
-
-# App tier
-module "app_vm_01" {
-  source = "./modules/azure-vm"
-  
-  subnet_id  = var.app_subnet_id
-  vm_name    = "app-01"
-  create_nsg = true
-  vm_size    = "Standard_D4s_v3"
-  
-  nsg_rules = [
+    },
     {
-      name                       = "AllowAppPort"
-      priority                   = 1000
+      name                       = "AllowSSHFromOffice"
+      priority                   = 1010
       direction                  = "Inbound"
       access                     = "Allow"
       protocol                   = "Tcp"
       source_port_range          = "*"
-      destination_port_range     = "8080"
-      source_address_prefix      = "10.0.1.0/24"  # Web subnet
+      destination_port_range     = "22"
+      source_address_prefix      = "203.0.113.0/24"  # Your office IP
       destination_address_prefix = "*"
     }
   ]
@@ -182,16 +341,40 @@ module "app_vm_01" {
 |------|-------------|------|
 | `subnet_id` | ID of the subnet where the VM will be deployed | `string` |
 | `resource_group_name` | Name for the resource group | `string` |
+| `admin_username` | Administrator username for the virtual machine | `string` |
 
-### Core Configuration (Optional with Defaults)
+### Core Configuration
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
+| `os_type` | Operating system type (Windows or Linux) | `string` | `"Windows"` |
 | `vm_name` | Name of the virtual machine (auto-generated if null) | `string` | `null` |
 | `vm_size` | Size of the virtual machine | `string` | `"Standard_B2s"` |
-| `admin_username` | Administrator username | `string` | `"azureuser"` |
-| `admin_password` | Administrator password (auto-generated if null) | `string` | `null` |
+| `admin_password` | Administrator password (required for Windows, optional for Linux) | `string` | `null` |
 | `location` | Azure region | `string` | `"West Europe"` |
+
+### Linux Authentication
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `ssh_public_key` | SSH public key for Linux VM authentication | `string` | `null` |
+| `disable_password_authentication` | Disable password authentication for Linux VMs | `bool` | `false` |
+
+### Image Configuration
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `image_publisher` | VM image publisher (null = use OS defaults) | `string` | `null` |
+| `image_offer` | VM image offer (null = use OS defaults) | `string` | `null` |
+| `image_sku` | VM image SKU (null = use OS defaults) | `string` | `null` |
+| `image_version` | VM image version | `string` | `"latest"` |
+
+### OS-Specific Image Defaults
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `windows_image_defaults` | Default Windows image configuration | `object` | Windows Server 2025 |
+| `linux_image_defaults` | Default Linux image configuration | `object` | Ubuntu 22.04 LTS |
 
 ### Network Configuration
 
@@ -218,14 +401,14 @@ module "app_vm_01" {
 | `os_disk_caching` | OS disk caching type | `string` | `"ReadWrite"` |
 | `os_disk_size_gb` | OS disk size in GB | `number` | `null` |
 
-### VM Image Configuration
+### Windows-Specific Configuration
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
-| `image_publisher` | VM image publisher | `string` | `"MicrosoftWindowsServer"` |
-| `image_offer` | VM image offer | `string` | `"WindowsServer"` |
-| `image_sku` | VM image SKU | `string` | `"2025-datacenter-azure-edition"` |
-| `image_version` | VM image version | `string` | `"latest"` |
+| `patch_mode` | VM patch mode | `string` | `"AutomaticByPlatform"` |
+| `hotpatching_enabled` | Enable hotpatching | `bool` | `false` |
+| `timezone` | VM timezone | `string` | `"UTC"` |
+| `enable_automatic_updates` | Enable automatic updates | `bool` | `true` |
 
 ### Resource Naming
 
@@ -240,8 +423,6 @@ module "app_vm_01" {
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
-| `patch_mode` | VM patch mode | `string` | `"AutomaticByPlatform"` |
-| `timezone` | VM timezone | `string` | `"UTC"` |
 | `zone` | Availability zone | `string` | `null` |
 | `identity_type` | Managed identity type | `string` | `"SystemAssigned"` |
 | `boot_diagnostics_enabled` | Enable boot diagnostics | `bool` | `true` |
@@ -255,9 +436,17 @@ module "app_vm_01" {
 | `vm_id` | Virtual machine ID |
 | `vm_name` | Virtual machine name |
 | `vm_size` | Virtual machine size |
+| `os_type` | Operating system type |
 | `admin_username` | Administrator username |
 | `admin_password` | Administrator password (sensitive) |
-| `password_auto_generated` | Whether password was auto-generated |
+| `password_provided` | Whether password was provided |
+
+### Authentication Information
+
+| Name | Description |
+|------|-------------|
+| `authentication_method` | Authentication method used |
+| `ssh_public_key_provided` | Whether SSH key was provided (Linux only) |
 
 ### Network Information
 
@@ -272,40 +461,37 @@ module "app_vm_01" {
 
 | Name | Description |
 |------|-------------|
-| `rdp_connection_string` | RDP connection command |
+| `rdp_connection_string` | RDP connection command (Windows) |
+| `ssh_connection_string` | SSH connection command (Linux) |
+| `connection_command` | OS-appropriate connection command |
 | `connection_guide` | Complete connection guide with security notes |
+
+### Comprehensive Information
+
+| Name | Description |
+|------|-------------|
 | `vm_summary` | Comprehensive VM summary |
-
-## 🔒 Security Best Practices
-
-### 1. NSG Rules Are Explicit
-- **No automatic rules** - Users must define exactly what they want
-- **No hidden RDP rules** - If you want RDP access, explicitly create the rule
-- **Principle of least privilege** - Start with no access, add what's needed
-
-### 2. Default Security Posture
-- **No public IP by default** - VMs are private unless explicitly configured
-- **No NSG by default** - Relies on subnet-level security
-- **Secure password generation** - Auto-generated passwords are complex and unique
-
-### 3. Recommended Patterns
-- **Internal VMs**: No NSG, rely on subnet security
-- **Public VMs**: Create NSG with explicit rules for required access
-- **Jump servers**: NSG with RDP restricted to admin IP ranges
-- **Web servers**: NSG with HTTP/HTTPS and restricted management access
+| `vm_image` | VM image information |
+| `linux_config` | Linux-specific configuration (Linux VMs only) |
+| `windows_config` | Windows-specific configuration (Windows VMs only) |
 
 ## 🎯 Use Cases
 
 ### Development Environment
+
 ```hcl
-module "dev_vm" {
+# Windows development workstation
+module "dev_windows" {
   source = "./modules/azure-vm"
   
-  subnet_id        = var.dev_subnet_id
-  vm_name          = "dev-workstation"
-  enable_public_ip = true
-  vm_size          = "Standard_D4s_v3"
-  create_nsg       = true
+  subnet_id           = var.dev_subnet_id
+  resource_group_name = "rg-dev-windows"
+  vm_name             = "dev-workstation"
+  admin_username      = "developer"
+  admin_password      = "DevPassword123!"
+  enable_public_ip    = true
+  vm_size             = "Standard_D4s_v3"
+  create_nsg          = true
   
   nsg_rules = [
     {
@@ -321,19 +507,53 @@ module "dev_vm" {
     }
   ]
 }
-```
 
-### Production Web Server
-```hcl
-module "prod_web" {
+# Linux development server
+module "dev_linux" {
   source = "./modules/azure-vm"
   
-  subnet_id        = var.web_subnet_id
-  vm_name          = "prod-web-01"
-  enable_public_ip = true
-  vm_size          = "Standard_D8s_v3"
-  os_disk_type     = "Premium_LRS"
-  create_nsg       = true
+  subnet_id           = var.dev_subnet_id
+  resource_group_name = "rg-dev-linux"
+  os_type             = "Linux"
+  vm_name             = "dev-server"
+  admin_username      = "developer"
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")
+  enable_public_ip    = true
+  vm_size             = "Standard_D4s_v3"
+  create_nsg          = true
+  
+  nsg_rules = [
+    {
+      name                       = "AllowSSHFromHome"
+      priority                   = 1000
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "22"
+      source_address_prefix      = "YOUR.HOME.IP/32"
+      destination_address_prefix = "*"
+    }
+  ]
+}
+```
+
+### Production Multi-Tier Application
+
+```hcl
+# Windows web tier
+module "prod_web_windows" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.web_subnet_id
+  resource_group_name = "rg-prod-web"
+  vm_name             = "prod-web-01"
+  admin_username      = "webadmin"
+  admin_password      = "SecureWebPass123!"
+  enable_public_ip    = true
+  vm_size             = "Standard_D8s_v3"
+  os_disk_type        = "Premium_LRS"
+  create_nsg          = true
   
   nsg_rules = [
     {
@@ -346,32 +566,51 @@ module "prod_web" {
       destination_port_range     = "443"
       source_address_prefix      = "*"
       destination_address_prefix = "*"
-    },
+    }
+  ]
+}
+
+# Linux application tier
+module "prod_app_linux" {
+  source = "./modules/azure-vm"
+  
+  subnet_id           = var.app_subnet_id
+  resource_group_name = "rg-prod-app"
+  os_type             = "Linux"
+  vm_name             = "prod-app-01"
+  admin_username      = "appadmin"
+  ssh_public_key      = file("~/.ssh/id_rsa.pub")
+  vm_size             = "Standard_E8s_v3"
+  os_disk_type        = "Premium_LRS"
+  create_nsg          = true
+  
+  nsg_rules = [
     {
-      name                       = "AllowHTTP"
-      priority                   = 1010
+      name                       = "AllowAppFromWeb"
+      priority                   = 1000
       direction                  = "Inbound"
       access                     = "Allow"
       protocol                   = "Tcp"
       source_port_range          = "*"
-      destination_port_range     = "80"
-      source_address_prefix      = "*"
+      destination_port_range     = "8080"
+      source_address_prefix      = "10.0.1.0/24"  # Web subnet
       destination_address_prefix = "*"
     }
   ]
 }
-```
 
-### Internal Database Server
-```hcl
-module "db_server" {
+# Windows database tier
+module "prod_db_windows" {
   source = "./modules/azure-vm"
   
-  subnet_id    = var.db_subnet_id
-  vm_name      = "db-server-01"
-  vm_size      = "Standard_E8s_v3"
-  os_disk_type = "Premium_LRS"
-  create_nsg   = true
+  subnet_id           = var.db_subnet_id
+  resource_group_name = "rg-prod-db"
+  vm_name             = "prod-db-01"
+  admin_username      = "dbadmin"
+  admin_password      = "SecureDbPass123!"
+  vm_size             = "Standard_E16s_v3"
+  os_disk_type        = "Premium_LRS"
+  create_nsg          = true
   
   nsg_rules = [
     {
@@ -389,16 +628,9 @@ module "db_server" {
 }
 ```
 
-## 🔄 Migration from Previous Version
+## 🔄 Migration Guide
 
-If you're upgrading from the previous version:
-
-1. **NSG behavior changed**: NSG is now optional and independent of public IP
-2. **No automatic RDP rules**: You must explicitly define RDP rules if needed
-3. **More variables available**: Many previously hardcoded values are now configurable
-4. **Better defaults**: Sensible defaults for most scenarios
-
-### Example Migration
+### From Windows-Only Module
 
 **Old approach:**
 ```hcl
@@ -422,8 +654,10 @@ module "vm" {
   admin_username   = "admin"
   admin_password   = "MyPassword123!"
   subnet_id        = var.subnet_id
+  resource_group_name = "rg-vm-prod"  # Now required
   enable_public_ip = true
   create_nsg       = true  # Now explicit
+  # os_type = "Windows" (default - backward compatible)
   
   # Must explicitly define RDP rule if needed
   nsg_rules = [
@@ -442,16 +676,43 @@ module "vm" {
 }
 ```
 
+### Key Changes
+
+1. **Authentication is now explicit** - No auto-generation of passwords
+2. **NSG behavior changed** - NSG creation is now optional and independent
+3. **Linux support added** - Full Linux VM support with SSH keys
+4. **Image defaults configurable** - Customize default images for your organization
+5. **More variables available** - Previously hardcoded values are now configurable
+
+## 🔒 Security Best Practices
+
+### 1. Authentication Security
+- **Windows**: Always provide strong passwords, consider using Azure Key Vault
+- **Linux**: Prefer SSH key authentication over passwords
+- **Hybrid Linux**: Use both SSH keys and passwords for maximum flexibility
+
+### 2. Network Security
+- **Internal VMs**: No NSG (rely on subnet-level security)
+- **Public VMs**: Create NSG with explicit rules for required access
+- **Principle of least privilege**: Only allow necessary ports and sources
+
+### 3. Image Security
+- **Use latest images**: Default to "latest" version for security updates
+- **Organizational standards**: Customize image defaults for compliance
+- **Regular updates**: Keep base images updated in your defaults
+
 ## 📚 Additional Resources
 
 - [Azure VM Sizes](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes)
 - [Azure NSG Rules](https://docs.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview)
+- [SSH Key Management](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ssh-from-windows)
 - [OpenTofu Documentation](https://opentofu.org/docs/)
 
 ## 🤝 Contributing
 
-This module follows security-first principles. When contributing:
-- No automatic security rules
+This module follows security-first principles and supports both Windows and Linux workloads. When contributing:
+- No automatic security rules or credential generation
 - Explicit configuration over implicit behavior
 - Comprehensive validation and documentation
-- Backward compatibility where possible
+- Maintain backward compatibility for Windows VMs
+- Support all common Linux authentication patterns

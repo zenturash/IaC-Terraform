@@ -261,13 +261,13 @@ variable "gateway_only_mode" {
 # ============================================================================
 
 variable "gateway_type" {
-  description = "Type of the virtual network gateway (Vpn or ExpressRoute)"
+  description = "Type of the virtual network gateway (always Vpn for this module)"
   type        = string
   default     = "Vpn"
   
   validation {
-    condition     = contains(["Vpn", "ExpressRoute"], var.gateway_type)
-    error_message = "Gateway type must be Vpn or ExpressRoute."
+    condition     = var.gateway_type == "Vpn"
+    error_message = "Gateway type must be Vpn. For ExpressRoute gateways, use a dedicated ExpressRoute module."
   }
 }
 

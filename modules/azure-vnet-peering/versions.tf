@@ -7,5 +7,9 @@ terraform {
       version = "~> 3.0"
       configuration_aliases = [azurerm.hub, azurerm.spoke]
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
+    }
   }
 }

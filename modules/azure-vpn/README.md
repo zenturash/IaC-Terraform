@@ -202,25 +202,132 @@ module "ha_vpn" {
 }
 ```
 
-### 4. ExpressRoute Gateway
+### 4. Multi-Site VPN (Multiple Connections)
 
 ```hcl
-module "expressroute_gateway" {
+# First, create the VPN Gateway in gateway-only mode
+module "multisite_vpn_gateway" {
   source = "./modules/azure-vpn"
 
-  resource_group_name = "rg-connectivity"
+  resource_group_name = "rg-multisite-connectivity"
   gateway_subnet_id   = module.networking.subnet_ids["GatewaySubnet"]
   
-  # ExpressRoute configuration
-  gateway_type        = "ExpressRoute"
-  vpn_gateway_sku     = "Standard"  # ExpressRoute SKU
-  
-  # No local gateway or connection for ExpressRoute
+  # Gateway-only mode for multi-site setup
   gateway_only_mode = true
+  
+  # High-performance for multiple connections
+  vpn_gateway_sku = "VpnGw2"
+  enable_bgp      = true
+  
+  bgp_settings = {
+    asn         = 65001
+    peer_weight = 10
+  }
+  
+  resource_name_prefix = "multisite"
   
   tags = {
     environment = "production"
-    connectivity = "expressroute"
+    role        = "multisite-hub"
+    connections = "multiple"
+  }
+}
+
+# Then create multiple local network gateways and connections
+# Connection 1: Headquarters
+module "vpn_connection_hq" {
+  source = "./modules/azure-vpn"
+
+  resource_group_name = "rg-multisite-connectivity"
+  gateway_subnet_id   = module.networking.subnet_ids["GatewaySubnet"]
+  
+  # Use existing VPN Gateway (reference by name)
+  vpn_gateway_name = module.multisite_vpn_gateway.vpn_gateway_name
+  use_random_suffix = false  # Use existing gateway
+  
+  local_network_gateway = {
+    name            = "lng-headquarters"
+    gateway_address = "203.0.113.10"
+    address_space   = ["10.0.0.0/16", "10.1.0.0/16"]
+  }
+  
+  vpn_connection = {
+    name       = "conn-headquarters"
+    shared_key = var.hq_vpn_shared_key
+  }
+  
+  tags = {
+    environment = "production"
+    site        = "headquarters"
+    priority    = "high"
+  }
+}
+
+# Connection 2: Branch Office 1
+module "vpn_connection_branch1" {
+  source = "./modules/azure-vpn"
+
+  resource_group_name = "rg-multisite-connectivity"
+  gateway_subnet_id   = module.networking.subnet_ids["GatewaySubnet"]
+  
+  # Use existing VPN Gateway
+  vpn_gateway_name = module.multisite_vpn_gateway.vpn_gateway_name
+  use_random_suffix = false
+  
+  local_network_gateway = {
+    name            = "lng-branch1"
+    gateway_address = "203.0.113.20"
+    address_space   = ["192.168.1.0/24"]
+  }
+  
+  vpn_connection = {
+    name       = "conn-branch1"
+    shared_key = var.branch1_vpn_shared_key
+  }
+  
+  tags = {
+    environment = "production"
+    site        = "branch1"
+    priority    = "medium"
+  }
+}
+
+# Connection 3: Branch Office 2
+module "vpn_connection_branch2" {
+  source = "./modules/azure-vpn"
+
+  resource_group_name = "rg-multisite-connectivity"
+  gateway_subnet_id   = module.networking.subnet_ids["GatewaySubnet"]
+  
+  # Use existing VPN Gateway
+  vpn_gateway_name = module.multisite_vpn_gateway.vpn_gateway_name
+  use_random_suffix = false
+  
+  local_network_gateway = {
+    name            = "lng-branch2"
+    gateway_address = "203.0.113.30"
+    address_space   = ["192.168.2.0/24"]
+  }
+  
+  vpn_connection = {
+    name       = "conn-branch2"
+    shared_key = var.branch2_vpn_shared_key
+    ipsec_policy = {
+      dh_group         = "DHGroup24"
+      ike_encryption   = "AES256"
+      ike_integrity    = "SHA384"
+      ipsec_encryption = "AES256"
+      ipsec_integrity  = "SHA256"
+      pfs_group        = "PFS24"
+      sa_lifetime      = 7200
+    }
+  }
+  
+  tags = {
+    environment = "production"
+    site        = "branch2"
+    priority    = "medium"
+    custom_ipsec = "true"
   }
 }
 ```

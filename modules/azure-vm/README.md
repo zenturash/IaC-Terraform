@@ -1,73 +1,142 @@
-# Azure VM Module
+# Azure VM OpenTofu Module
 
-This module creates Azure Windows Virtual Machines with comprehensive networking, security, and storage configuration options.
+A highly flexible and secure OpenTofu module for deploying Azure Windows Virtual Machines with comprehensive configuration options and sensible defaults.
 
-## Features
+## 🚀 Key Features
 
-- **Windows Server 2025**: Latest Windows Server with Azure Edition
-- **Flexible VM Sizing**: Support for various Azure VM sizes with validation
-- **Network Security**: Optional Network Security Groups with custom rules
-- **Public IP Support**: Conditional public IP assignment
-- **Storage Options**: Multiple storage account types for OS disks
-- **Password Authentication**: Secure password-based authentication
-- **Automatic Patching**: AutomaticByPlatform patch mode
-- **Resource Group Management**: Creates dedicated resource group per VM
-- **Comprehensive Outputs**: Complete VM and networking information
+✅ **Minimal Required Input** - Only `subnet_id` required, everything else has smart defaults  
+✅ **Security-First Approach** - No automatic NSG rules, users must explicitly define security  
+✅ **Maximum Flexibility** - Every hardcoded value is now configurable with defaults  
+✅ **Auto-Generation** - VM names, passwords, and resource names auto-generated for uniqueness  
+✅ **Multiple Instance Support** - Deploy multiple VMs without conflicts  
+✅ **NSG Independence** - NSG creation is independent of public IP configuration  
+✅ **Comprehensive Outputs** - Detailed outputs including connection information  
 
-## Usage
+## 🔧 Requirements
 
-### Basic VM (Private)
+- OpenTofu >= 1.0
+- Azure Provider >= 3.0
+- Random Provider >= 3.1
+
+## 📋 Quick Start
+
+### Minimal Usage (Only subnet_id required)
 
 ```hcl
-module "vm" {
+module "simple_vm" {
   source = "./modules/azure-vm"
-
-  vm_name        = "vm-web-01"
-  admin_username = "azureuser"
-  admin_password = "ComplexPassword123!"
-  subnet_id      = "/subscriptions/.../subnets/subnet-web"
   
-  vm_size             = "Standard_B2s"
-  resource_group_name = "rg-web-servers"
-  
-  tags = {
-    environment = "production"
-    tier        = "web"
-  }
+  subnet_id = "/subscriptions/your-sub/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-main/subnets/subnet-app"
 }
 ```
 
-### VM with Public IP and NSG
+**What you get:**
+- VM with auto-generated name (e.g., `vm-a1b2c3d4`)
+- Auto-generated secure password (output as sensitive)
+- Windows Server 2025 Datacenter Azure Edition
+- Standard_B2s VM size
+- Premium_LRS OS disk
+- No public IP (private only)
+- No NSG (uses subnet-level security)
+- Auto-generated resource group with random suffix
+
+## 🛡️ Security Examples
+
+### 1. VM without NSG (Recommended for Internal VMs)
 
 ```hcl
-module "vm_public" {
+# Most common pattern - no NSG, relies on subnet-level security
+module "internal_vm" {
   source = "./modules/azure-vm"
+  
+  subnet_id = var.internal_subnet_id
+  vm_name   = "app-server-01"
+  # create_nsg = false (this is the default)
+}
+```
 
-  vm_name        = "vm-mgmt-01"
-  admin_username = "azureuser"
-  admin_password = "ComplexPassword123!"
-  subnet_id      = "/subscriptions/.../subnets/subnet-mgmt"
+**Security posture:**
+- No NSG created at VM level
+- Relies entirely on subnet-level Network Security Groups
+- Most secure and recommended approach for internal VMs
+- Simpler management - security rules managed at subnet level
+
+### 2. Public VM without NSG (Uses Subnet Security)
+
+```hcl
+# Public VM that relies on subnet NSG for security
+module "public_vm_no_nsg" {
+  source = "./modules/azure-vm"
   
-  vm_size          = "Standard_D2s_v3"
+  subnet_id        = var.public_subnet_id
+  vm_name          = "public-server-01"
   enable_public_ip = true
+  # create_nsg = false (default - no VM-level NSG)
+}
+```
+
+**Security posture:**
+- VM has public IP but no VM-level NSG
+- Security controlled by subnet-level NSG rules
+- Good for scenarios where subnet already has appropriate rules
+- Reduces NSG sprawl and management overhead
+
+### Public VM with Explicit NSG Rules
+
+```hcl
+module "web_server" {
+  source = "./modules/azure-vm"
   
-  resource_group_name = "rg-management"
+  subnet_id        = var.web_subnet_id
+  vm_name          = "web-server-01"
+  enable_public_ip = true
+  create_nsg       = true
   
+  # Users must explicitly define ALL security rules
   nsg_rules = [
     {
-      name                       = "AllowRDP"
+      name                       = "AllowHTTPS"
       priority                   = 1000
       direction                  = "Inbound"
       access                     = "Allow"
       protocol                   = "Tcp"
       source_port_range          = "*"
-      destination_port_range     = "3389"
-      source_address_prefix      = "203.0.113.0/24"  # Your office IP range
+      destination_port_range     = "443"
+      source_address_prefix      = "*"
       destination_address_prefix = "*"
     },
     {
+      name                       = "AllowRDPFromOffice"
+      priority                   = 1010
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "3389"
+      source_address_prefix      = "203.0.113.0/24"  # Your office IP
+      destination_address_prefix = "*"
+    }
+  ]
+}
+```
+
+### Multiple VMs (No Conflicts)
+
+```hcl
+# Web tier
+module "web_vm_01" {
+  source = "./modules/azure-vm"
+  
+  subnet_id        = var.web_subnet_id
+  vm_name          = "web-01"
+  enable_public_ip = true
+  create_nsg       = true
+  vm_size          = "Standard_D2s_v3"
+  
+  nsg_rules = [
+    {
       name                       = "AllowHTTPS"
-      priority                   = 1100
+      priority                   = 1000
       direction                  = "Inbound"
       access                     = "Allow"
       protocol                   = "Tcp"
@@ -77,180 +146,208 @@ module "vm_public" {
       destination_address_prefix = "*"
     }
   ]
-  
-  tags = {
-    environment = "production"
-    tier        = "management"
-    public_access = "true"
-  }
 }
-```
 
-### High-Performance VM
-
-```hcl
-module "vm_app" {
+# App tier
+module "app_vm_01" {
   source = "./modules/azure-vm"
-
-  vm_name        = "vm-app-01"
-  admin_username = "azureuser"
-  admin_password = "ComplexPassword123!"
-  subnet_id      = "/subscriptions/.../subnets/subnet-app"
   
-  vm_size      = "Standard_D4s_v3"
-  os_disk_type = "Premium_LRS"  # High-performance storage
-  
-  resource_group_name = "rg-application"
-  
-  tags = {
-    environment = "production"
-    tier        = "application"
-    performance = "high"
-  }
-}
-```
-
-## VM Sizes
-
-The module supports and validates the following Azure VM sizes:
-
-### Burstable (B-series)
-- `Standard_B1s` - 1 vCPU, 1 GB RAM (Basic workloads)
-- `Standard_B2s` - 2 vCPU, 4 GB RAM (Light workloads)
-- `Standard_B4ms` - 4 vCPU, 16 GB RAM (Medium workloads)
-
-### General Purpose (D-series)
-- `Standard_D2s_v3` - 2 vCPU, 8 GB RAM
-- `Standard_D4s_v3` - 4 vCPU, 16 GB RAM
-- `Standard_D8s_v3` - 8 vCPU, 32 GB RAM
-
-### Memory Optimized (E-series)
-- `Standard_E2s_v3` - 2 vCPU, 16 GB RAM
-- `Standard_E4s_v3` - 4 vCPU, 32 GB RAM
-- `Standard_E8s_v3` - 8 vCPU, 64 GB RAM
-
-### Compute Optimized (F-series)
-- `Standard_F2s_v2` - 2 vCPU, 4 GB RAM
-- `Standard_F4s_v2` - 4 vCPU, 8 GB RAM
-- `Standard_F8s_v2` - 8 vCPU, 16 GB RAM
-
-## Storage Options
-
-### OS Disk Types
-- `Standard_LRS` - Standard locally redundant storage (cost-effective)
-- `StandardSSD_LRS` - Standard SSD locally redundant storage (balanced)
-- `Premium_LRS` - Premium SSD locally redundant storage (high performance)
-- `UltraSSD_LRS` - Ultra SSD locally redundant storage (ultra-high performance)
-
-## Network Security Groups
-
-### NSG Rule Structure
-
-```hcl
-nsg_rules = [
-  {
-    name                       = "RuleName"
-    priority                   = 1000                    # 100-4096
-    direction                  = "Inbound"               # Inbound/Outbound
-    access                     = "Allow"                 # Allow/Deny
-    protocol                   = "Tcp"                   # Tcp/Udp/Icmp/*
-    source_port_range          = "*"                     # Port or *
-    destination_port_range     = "3389"                  # Port or *
-    source_address_prefix      = "10.0.0.0/24"          # CIDR or *
-    destination_address_prefix = "*"                     # CIDR or *
-  }
-]
-```
-
-### Common NSG Rules
-
-#### RDP Access
-```hcl
-{
-  name                       = "AllowRDP"
-  priority                   = 1000
-  direction                  = "Inbound"
-  access                     = "Allow"
-  protocol                   = "Tcp"
-  source_port_range          = "*"
-  destination_port_range     = "3389"
-  source_address_prefix      = "YOUR.IP.ADDRESS/32"
-  destination_address_prefix = "*"
-}
-```
-
-#### HTTP/HTTPS Access
-```hcl
-{
-  name                       = "AllowHTTP"
-  priority                   = 1100
-  direction                  = "Inbound"
-  access                     = "Allow"
-  protocol                   = "Tcp"
-  source_port_range          = "*"
-  destination_port_range     = "80"
-  source_address_prefix      = "*"
-  destination_address_prefix = "*"
-}
-```
-
-## Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| vm_name | Name of the virtual machine | `string` | n/a | yes |
-| admin_username | Administrator username for the virtual machine | `string` | n/a | yes |
-| admin_password | Administrator password for the virtual machine | `string` | n/a | yes |
-| subnet_id | ID of the subnet where the VM will be deployed | `string` | n/a | yes |
-| vm_size | Size of the virtual machine | `string` | `"Standard_B2s"` | no |
-| location | Azure region where resources will be created | `string` | `"West Europe"` | no |
-| resource_group_name | Base name for the resource group | `string` | `"rg-vm-poc"` | no |
-| enable_public_ip | Whether to create and assign a public IP to the VM | `bool` | `false` | no |
-| os_disk_type | Storage account type for the OS disk | `string` | `"Premium_LRS"` | no |
-| nsg_rules | List of NSG rules to create when public IP is enabled | `list(object)` | `[]` | no |
-| tags | Tags to apply to all resources | `map(string)` | `{}` | no |
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| resource_group_name | Name of the created resource group |
-| resource_group_id | ID of the created resource group |
-| location | Azure region where resources were created |
-| vm_name | Name of the virtual machine |
-| vm_id | ID of the virtual machine |
-| vm_size | Size of the virtual machine |
-| private_ip_address | Private IP address of the virtual machine |
-| public_ip_address | Public IP address of the virtual machine (if enabled) |
-| network_interface_id | ID of the network interface |
-| rdp_connection_string | RDP connection string (if public IP is enabled) |
-| admin_username | Administrator username for the virtual machine |
-| tags | Tags applied to the VM |
-| nsg_id | ID of the Network Security Group (if created) |
-| nsg_name | Name of the Network Security Group (if created) |
-| nsg_rules | List of NSG rules applied |
-
-## Examples
-
-### Web Server VM
-
-```hcl
-module "web_server" {
-  source = "./modules/azure-vm"
-
-  vm_name        = "vm-web-01"
-  admin_username = "webadmin"
-  admin_password = "WebServer123!"
-  subnet_id      = module.networking.subnet_ids["subnet-web"]
-  
-  vm_size             = "Standard_D2s_v3"
-  resource_group_name = "rg-web-servers"
-  enable_public_ip    = true
+  subnet_id  = var.app_subnet_id
+  vm_name    = "app-01"
+  create_nsg = true
+  vm_size    = "Standard_D4s_v3"
   
   nsg_rules = [
     {
-      name                       = "AllowHTTP"
+      name                       = "AllowAppPort"
       priority                   = 1000
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "8080"
+      source_address_prefix      = "10.0.1.0/24"  # Web subnet
+      destination_address_prefix = "*"
+    }
+  ]
+}
+```
+
+## 📝 Variables
+
+### Required Variables
+
+| Name | Description | Type |
+|------|-------------|------|
+| `subnet_id` | ID of the subnet where the VM will be deployed | `string` |
+
+### Core Configuration (Optional with Defaults)
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `vm_name` | Name of the virtual machine (auto-generated if null) | `string` | `null` |
+| `vm_size` | Size of the virtual machine | `string` | `"Standard_B2s"` |
+| `admin_username` | Administrator username | `string` | `"azureuser"` |
+| `admin_password` | Administrator password (auto-generated if null) | `string` | `null` |
+| `location` | Azure region | `string` | `"West Europe"` |
+
+### Network Configuration
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `enable_public_ip` | Whether to create a public IP | `bool` | `false` |
+| `public_ip_allocation_method` | Public IP allocation method | `string` | `"Static"` |
+| `public_ip_sku` | Public IP SKU | `string` | `"Standard"` |
+| `private_ip_allocation` | Private IP allocation method | `string` | `"Dynamic"` |
+| `private_ip_address` | Static private IP (when allocation is Static) | `string` | `null` |
+
+### Security Configuration
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `create_nsg` | Whether to create a Network Security Group | `bool` | `false` |
+| `nsg_rules` | List of NSG rules to create | `list(object)` | `[]` |
+
+### Storage Configuration
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `os_disk_type` | Storage account type for OS disk | `string` | `"Premium_LRS"` |
+| `os_disk_caching` | OS disk caching type | `string` | `"ReadWrite"` |
+| `os_disk_size_gb` | OS disk size in GB | `number` | `null` |
+
+### VM Image Configuration
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `image_publisher` | VM image publisher | `string` | `"MicrosoftWindowsServer"` |
+| `image_offer` | VM image offer | `string` | `"WindowsServer"` |
+| `image_sku` | VM image SKU | `string` | `"2025-datacenter-azure-edition"` |
+| `image_version` | VM image version | `string` | `"latest"` |
+
+### Resource Naming
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `use_random_suffix` | Add random suffix for uniqueness | `bool` | `true` |
+| `public_ip_name_prefix` | Public IP name prefix | `string` | `"pip"` |
+| `nsg_name_prefix` | NSG name prefix | `string` | `"nsg"` |
+| `nic_name_prefix` | NIC name prefix | `string` | `"nic"` |
+
+### Advanced Configuration
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `patch_mode` | VM patch mode | `string` | `"AutomaticByPlatform"` |
+| `timezone` | VM timezone | `string` | `"UTC"` |
+| `zone` | Availability zone | `string` | `null` |
+| `identity_type` | Managed identity type | `string` | `"SystemAssigned"` |
+| `boot_diagnostics_enabled` | Enable boot diagnostics | `bool` | `true` |
+
+## 📤 Outputs
+
+### Core VM Information
+
+| Name | Description |
+|------|-------------|
+| `vm_id` | Virtual machine ID |
+| `vm_name` | Virtual machine name |
+| `vm_size` | Virtual machine size |
+| `admin_username` | Administrator username |
+| `admin_password` | Administrator password (sensitive) |
+| `password_auto_generated` | Whether password was auto-generated |
+
+### Network Information
+
+| Name | Description |
+|------|-------------|
+| `private_ip_address` | Private IP address |
+| `public_ip_address` | Public IP address (if enabled) |
+| `network_interface_id` | Network interface ID |
+| `network_security_group_id` | NSG ID (if created) |
+
+### Connection Information
+
+| Name | Description |
+|------|-------------|
+| `rdp_connection_string` | RDP connection command |
+| `connection_guide` | Complete connection guide with security notes |
+| `vm_summary` | Comprehensive VM summary |
+
+## 🔒 Security Best Practices
+
+### 1. NSG Rules Are Explicit
+- **No automatic rules** - Users must define exactly what they want
+- **No hidden RDP rules** - If you want RDP access, explicitly create the rule
+- **Principle of least privilege** - Start with no access, add what's needed
+
+### 2. Default Security Posture
+- **No public IP by default** - VMs are private unless explicitly configured
+- **No NSG by default** - Relies on subnet-level security
+- **Secure password generation** - Auto-generated passwords are complex and unique
+
+### 3. Recommended Patterns
+- **Internal VMs**: No NSG, rely on subnet security
+- **Public VMs**: Create NSG with explicit rules for required access
+- **Jump servers**: NSG with RDP restricted to admin IP ranges
+- **Web servers**: NSG with HTTP/HTTPS and restricted management access
+
+## 🎯 Use Cases
+
+### Development Environment
+```hcl
+module "dev_vm" {
+  source = "./modules/azure-vm"
+  
+  subnet_id        = var.dev_subnet_id
+  vm_name          = "dev-workstation"
+  enable_public_ip = true
+  vm_size          = "Standard_D4s_v3"
+  create_nsg       = true
+  
+  nsg_rules = [
+    {
+      name                       = "AllowRDPFromHome"
+      priority                   = 1000
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "3389"
+      source_address_prefix      = "YOUR.HOME.IP/32"
+      destination_address_prefix = "*"
+    }
+  ]
+}
+```
+
+### Production Web Server
+```hcl
+module "prod_web" {
+  source = "./modules/azure-vm"
+  
+  subnet_id        = var.web_subnet_id
+  vm_name          = "prod-web-01"
+  enable_public_ip = true
+  vm_size          = "Standard_D8s_v3"
+  os_disk_type     = "Premium_LRS"
+  create_nsg       = true
+  
+  nsg_rules = [
+    {
+      name                       = "AllowHTTPS"
+      priority                   = 1000
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "443"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+    },
+    {
+      name                       = "AllowHTTP"
+      priority                   = 1010
       direction                  = "Inbound"
       access                     = "Allow"
       protocol                   = "Tcp"
@@ -258,71 +355,75 @@ module "web_server" {
       destination_port_range     = "80"
       source_address_prefix      = "*"
       destination_address_prefix = "*"
-    },
+    }
+  ]
+}
+```
+
+### Internal Database Server
+```hcl
+module "db_server" {
+  source = "./modules/azure-vm"
+  
+  subnet_id    = var.db_subnet_id
+  vm_name      = "db-server-01"
+  vm_size      = "Standard_E8s_v3"
+  os_disk_type = "Premium_LRS"
+  create_nsg   = true
+  
+  nsg_rules = [
     {
-      name                       = "AllowHTTPS"
-      priority                   = 1100
+      name                       = "AllowSQLFromApp"
+      priority                   = 1000
       direction                  = "Inbound"
       access                     = "Allow"
       protocol                   = "Tcp"
       source_port_range          = "*"
-      destination_port_range     = "443"
-      source_address_prefix      = "*"
+      destination_port_range     = "1433"
+      source_address_prefix      = "10.0.2.0/24"  # App subnet
       destination_address_prefix = "*"
     }
   ]
-  
-  tags = {
-    environment = "production"
-    tier        = "web"
-    role        = "webserver"
-  }
 }
 ```
 
-### Database Server VM
+## 🔄 Migration from Previous Version
 
+If you're upgrading from the previous version:
+
+1. **NSG behavior changed**: NSG is now optional and independent of public IP
+2. **No automatic RDP rules**: You must explicitly define RDP rules if needed
+3. **More variables available**: Many previously hardcoded values are now configurable
+4. **Better defaults**: Sensible defaults for most scenarios
+
+### Example Migration
+
+**Old approach:**
 ```hcl
-module "database_server" {
+module "vm" {
   source = "./modules/azure-vm"
-
-  vm_name        = "vm-db-01"
-  admin_username = "dbadmin"
-  admin_password = "DatabaseServer123!"
-  subnet_id      = module.networking.subnet_ids["subnet-db"]
   
-  vm_size      = "Standard_E4s_v3"  # Memory optimized
-  os_disk_type = "Premium_LRS"      # High performance storage
-  
-  resource_group_name = "rg-database"
-  enable_public_ip    = false       # Private database server
-  
-  tags = {
-    environment = "production"
-    tier        = "database"
-    role        = "sqlserver"
-    backup      = "required"
-  }
+  vm_name        = "my-vm"
+  admin_username = "admin"
+  admin_password = "MyPassword123!"
+  subnet_id      = var.subnet_id
+  enable_public_ip = true
 }
 ```
 
-### Development VM
-
+**New approach (equivalent):**
 ```hcl
-module "dev_vm" {
+module "vm" {
   source = "./modules/azure-vm"
-
-  vm_name        = "vm-dev-01"
-  admin_username = "developer"
-  admin_password = "DevEnvironment123!"
-  subnet_id      = module.networking.subnet_ids["subnet-dev"]
   
-  vm_size      = "Standard_B4ms"    # Burstable for development
-  os_disk_type = "StandardSSD_LRS"  # Balanced performance/cost
+  vm_name          = "my-vm"
+  admin_username   = "admin"
+  admin_password   = "MyPassword123!"
+  subnet_id        = var.subnet_id
+  enable_public_ip = true
+  create_nsg       = true  # Now explicit
   
-  resource_group_name = "rg-development"
-  enable_public_ip    = true
-  
+  # Must explicitly define RDP rule if needed
   nsg_rules = [
     {
       name                       = "AllowRDP"
@@ -332,65 +433,23 @@ module "dev_vm" {
       protocol                   = "Tcp"
       source_port_range          = "*"
       destination_port_range     = "3389"
-      source_address_prefix      = "203.0.113.0/24"  # Office network
+      source_address_prefix      = "YOUR.IP.RANGE/24"
       destination_address_prefix = "*"
     }
   ]
-  
-  tags = {
-    environment = "development"
-    tier        = "development"
-    auto_shutdown = "true"
-  }
 }
 ```
 
-## Requirements
+## 📚 Additional Resources
 
-| Name | Version |
-|------|---------|
-| terraform | >= 1.0 |
-| azurerm | ~> 3.0 |
-| random | ~> 3.1 |
+- [Azure VM Sizes](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes)
+- [Azure NSG Rules](https://docs.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview)
+- [OpenTofu Documentation](https://opentofu.org/docs/)
 
-## Providers
+## 🤝 Contributing
 
-| Name | Version |
-|------|---------|
-| azurerm | ~> 3.0 |
-
-## Resources
-
-- `azurerm_resource_group.main`
-- `azurerm_public_ip.main` (conditional)
-- `azurerm_network_security_group.main` (conditional)
-- `azurerm_network_security_rule.rules` (multiple, conditional)
-- `azurerm_subnet_network_security_group_association.main` (conditional)
-- `azurerm_network_interface.main`
-- `azurerm_windows_virtual_machine.main`
-
-## Security Considerations
-
-- **Password Complexity**: Ensure admin passwords meet Azure complexity requirements (12-123 characters)
-- **NSG Rules**: Only open necessary ports and restrict source IP ranges
-- **Public IP**: Only enable public IP when required for external access
-- **Patch Management**: AutomaticByPlatform patch mode is enabled by default
-- **Disk Encryption**: Consider enabling Azure Disk Encryption for sensitive workloads
-
-## Cost Optimization
-
-- **VM Sizing**: Start with smaller sizes and scale up as needed
-- **Storage**: Use Standard_LRS for development, Premium_LRS for production
-- **Public IPs**: Only assign when necessary (additional cost)
-- **Auto-shutdown**: Implement auto-shutdown for development VMs
-- **Reserved Instances**: Consider RIs for long-running production workloads
-
-## Troubleshooting
-
-### Common Issues
-
-1. **VM Size Not Available**: Check region availability for specific VM sizes
-2. **Subnet Full**: Ensure subnet has available IP addresses
-3. **NSG Conflicts**: Verify NSG rule priorities don't conflict
-4. **Password Policy**: Ensure password meets Azure complexity requirements
-5. **Quota Limits**: Check subscription quotas for VM cores and public IPs
+This module follows security-first principles. When contributing:
+- No automatic security rules
+- Explicit configuration over implicit behavior
+- Comprehensive validation and documentation
+- Backward compatibility where possible

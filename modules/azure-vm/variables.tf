@@ -58,7 +58,6 @@ variable "vm_size" {
 variable "admin_username" {
   description = "Administrator username for the virtual machine"
   type        = string
-  default     = "azureuser"
   
   validation {
     condition     = length(var.admin_username) > 0 && length(var.admin_username) <= 20
@@ -67,7 +66,7 @@ variable "admin_username" {
 }
 
 variable "admin_password" {
-  description = "Administrator password for the virtual machine. If null, will auto-generate secure password"
+  description = "Administrator password for the virtual machine (required for Windows VMs and Linux VMs with password authentication)"
   type        = string
   default     = null
   sensitive   = true
@@ -432,6 +431,18 @@ variable "user_assigned_identity_ids" {
 # CROSS-VARIABLE VALIDATION
 # ============================================================================
 
+# Ensure Windows VMs have required authentication
+variable "validate_windows_auth" {
+  description = "Internal validation variable - do not set manually"
+  type        = bool
+  default     = true
+  
+  validation {
+    condition = var.os_type == "Windows" ? var.admin_password != null : true
+    error_message = "Windows VMs require admin_password to be provided."
+  }
+}
+
 # Ensure Linux VMs have appropriate authentication
 variable "validate_linux_auth" {
   description = "Internal validation variable - do not set manually"
@@ -440,9 +451,9 @@ variable "validate_linux_auth" {
   
   validation {
     condition = var.os_type == "Linux" ? (
-      var.ssh_public_key != null || var.admin_password != null
+      var.ssh_public_key != null || (!var.disable_password_authentication && var.admin_password != null)
     ) : true
-    error_message = "Linux VMs require either SSH public key or password authentication (or both)."
+    error_message = "Linux VMs require either SSH public key or password authentication. If password authentication is disabled, SSH public key must be provided."
   }
 }
 

@@ -37,14 +37,14 @@ output "admin_username" {
 }
 
 output "admin_password" {
-  description = "Administrator password for the virtual machine (auto-generated if not provided)"
+  description = "Administrator password for the virtual machine"
   value       = local.admin_password
   sensitive   = true
 }
 
-output "password_auto_generated" {
-  description = "Whether the admin password was auto-generated"
-  value       = var.admin_password == null
+output "password_provided" {
+  description = "Whether the admin password was provided"
+  value       = var.admin_password != null
 }
 
 output "ssh_public_key_provided" {
@@ -247,7 +247,7 @@ output "vm_summary" {
       var.ssh_public_key != null && !var.disable_password_authentication ? "SSH Key + Password" :
       "Password Only"
     )
-    password_auto_generated = var.admin_password == null
+    password_provided = var.admin_password != null
     
     # Network Configuration
     private_ip        = azurerm_network_interface.main.private_ip_address
@@ -315,11 +315,11 @@ output "connection_guide" {
     connection_info = var.enable_public_ip ? "Connect via public IP: ${azurerm_public_ip.main[0].ip_address}" : "Connect via private IP: ${azurerm_network_interface.main.private_ip_address} (requires VPN or bastion)"
     
     auth_info = var.os_type == "Windows" ? (
-      var.admin_password == null ? "Password was auto-generated - check 'admin_password' output (sensitive)" : "Using provided password"
+      var.admin_password != null ? "Using provided password" : "Password required but not provided"
     ) : (
       var.ssh_public_key != null && var.disable_password_authentication ? "SSH key authentication only" :
       var.ssh_public_key != null && !var.disable_password_authentication ? "SSH key + password authentication available" :
-      var.admin_password == null ? "Password was auto-generated - check 'admin_password' output (sensitive)" : "Using provided password"
+      var.admin_password != null ? "Using provided password" : "Password required but not provided"
     )
     
     security_note = var.create_nsg ? "NSG is enabled - check nsg_rules for specific access rules" : "No NSG configured - using subnet-level security"

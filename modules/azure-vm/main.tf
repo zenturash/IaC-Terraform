@@ -8,15 +8,7 @@ resource "random_id" "main" {
   byte_length = 4
 }
 
-# Random password generation if not provided
-resource "random_password" "admin_password" {
-  count   = var.admin_password == null ? 1 : 0
-  length  = 16
-  special = true
-  upper   = true
-  lower   = true
-  numeric = true
-}
+# No auto-generation - users must provide credentials explicitly
 
 # ============================================================================
 # LOCAL VALUES FOR CONSISTENT NAMING AND CONFIGURATION
@@ -30,8 +22,8 @@ locals {
   # Determine VM name (auto-generate if not provided)
   vm_name = var.vm_name != null ? var.vm_name : "vm${local.suffix}"
   
-  # Determine admin password (use provided or generated)
-  admin_password = var.admin_password != null ? var.admin_password : random_password.admin_password[0].result
+  # Use provided admin password directly
+  admin_password = var.admin_password
   
   # Resource names with prefixes and suffixes
   public_ip_name = "${var.public_ip_name_prefix}-${local.vm_name}"

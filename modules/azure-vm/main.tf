@@ -34,24 +34,12 @@ locals {
   # Resource group name with suffix if creating new RG
   resource_group_name = var.create_resource_group ? "${var.resource_group_name}${local.suffix}" : var.resource_group_name
   
-  # OS-specific image defaults
-  os_image_defaults = {
-    Windows = {
-      publisher = "MicrosoftWindowsServer"
-      offer     = "WindowsServer"
-      sku       = "2025-datacenter-azure-edition"
-    }
-    Linux = {
-      publisher = "Canonical"
-      offer     = "0001-com-ubuntu-server-jammy"
-      sku       = "22_04-lts-gen2"
-    }
-  }
+  # Determine image configuration (use provided or OS-specific defaults)
+  os_defaults = var.os_type == "Windows" ? var.windows_image_defaults : var.linux_image_defaults
   
-  # Determine image configuration (use provided or OS defaults)
-  image_publisher = var.image_publisher != "MicrosoftWindowsServer" ? var.image_publisher : local.os_image_defaults[var.os_type].publisher
-  image_offer     = var.image_offer != "WindowsServer" ? var.image_offer : local.os_image_defaults[var.os_type].offer
-  image_sku       = var.image_sku != "2025-datacenter-azure-edition" ? var.image_sku : local.os_image_defaults[var.os_type].sku
+  image_publisher = var.image_publisher != null ? var.image_publisher : local.os_defaults.publisher
+  image_offer     = var.image_offer != null ? var.image_offer : local.os_defaults.offer
+  image_sku       = var.image_sku != null ? var.image_sku : local.os_defaults.sku
   
   # Connection IP for outputs
   connection_ip = var.enable_public_ip ? azurerm_public_ip.main[0].ip_address : azurerm_network_interface.main.private_ip_address

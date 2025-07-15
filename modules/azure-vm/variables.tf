@@ -265,21 +265,53 @@ variable "os_disk_size_gb" {
 # ============================================================================
 
 variable "image_publisher" {
-  description = "Publisher of the VM image"
+  description = "Publisher of the VM image. If null, uses OS-specific default"
   type        = string
-  default     = "MicrosoftWindowsServer"
+  default     = null
 }
 
 variable "image_offer" {
-  description = "Offer of the VM image"
+  description = "Offer of the VM image. If null, uses OS-specific default"
   type        = string
-  default     = "WindowsServer"
+  default     = null
 }
 
 variable "image_sku" {
-  description = "SKU of the VM image"
+  description = "SKU of the VM image. If null, uses OS-specific default"
   type        = string
-  default     = "2025-datacenter-azure-edition"
+  default     = null
+}
+
+# ============================================================================
+# OS-SPECIFIC IMAGE DEFAULTS
+# ============================================================================
+
+variable "windows_image_defaults" {
+  description = "Default image configuration for Windows VMs"
+  type = object({
+    publisher = string
+    offer     = string
+    sku       = string
+  })
+  default = {
+    publisher = "MicrosoftWindowsServer"
+    offer     = "WindowsServer"
+    sku       = "2025-datacenter-azure-edition"
+  }
+}
+
+variable "linux_image_defaults" {
+  description = "Default image configuration for Linux VMs"
+  type = object({
+    publisher = string
+    offer     = string
+    sku       = string
+  })
+  default = {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-gen2"
+  }
 }
 
 variable "image_version" {

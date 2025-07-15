@@ -4,7 +4,7 @@ A highly flexible and secure OpenTofu module for deploying Azure Windows Virtual
 
 ## 🚀 Key Features
 
-✅ **Minimal Required Input** - Only `subnet_id` required, everything else has smart defaults  
+✅ **Minimal Required Input** - Only `subnet_id` and `resource_group_name` required, everything else has smart defaults  
 ✅ **Security-First Approach** - No automatic NSG rules, users must explicitly define security  
 ✅ **Maximum Flexibility** - Every hardcoded value is now configurable with defaults  
 ✅ **Auto-Generation** - VM names, passwords, and resource names auto-generated for uniqueness  
@@ -20,13 +20,14 @@ A highly flexible and secure OpenTofu module for deploying Azure Windows Virtual
 
 ## 📋 Quick Start
 
-### Minimal Usage (Only subnet_id required)
+### Minimal Usage (Only required variables)
 
 ```hcl
 module "simple_vm" {
   source = "./modules/azure-vm"
   
-  subnet_id = "/subscriptions/your-sub/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-main/subnets/subnet-app"
+  subnet_id           = "/subscriptions/your-sub/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-main/subnets/subnet-app"
+  resource_group_name = "rg-vm-prod"
 }
 ```
 
@@ -38,7 +39,7 @@ module "simple_vm" {
 - Premium_LRS OS disk
 - No public IP (private only)
 - No NSG (uses subnet-level security)
-- Auto-generated resource group with random suffix
+- Resource group: `rg-vm-prod-a1b2c3d4` (with random suffix)
 
 ## 🛡️ Security Examples
 
@@ -180,6 +181,7 @@ module "app_vm_01" {
 | Name | Description | Type |
 |------|-------------|------|
 | `subnet_id` | ID of the subnet where the VM will be deployed | `string` |
+| `resource_group_name` | Name for the resource group | `string` |
 
 ### Core Configuration (Optional with Defaults)
 

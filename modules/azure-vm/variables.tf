@@ -80,7 +80,11 @@ variable "location" {
 variable "resource_group_name" {
   description = "Name for the resource group. If create_resource_group is false, this should be an existing RG"
   type        = string
-  default     = "rg-vm-poc"
+  
+  validation {
+    condition     = length(var.resource_group_name) > 0 && length(var.resource_group_name) <= 90
+    error_message = "Resource group name must be between 1 and 90 characters."
+  }
 }
 
 variable "create_resource_group" {

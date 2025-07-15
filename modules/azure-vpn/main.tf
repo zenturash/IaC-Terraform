@@ -86,18 +86,18 @@ resource "azurerm_virtual_network_gateway" "vpn_gateway" {
   location            = var.location
   resource_group_name = var.resource_group_name
 
-  type     = "Vpn"
+  type     = var.gateway_type
   vpn_type = var.vpn_type
 
-  active_active = false
+  active_active = var.active_active
   enable_bgp    = var.enable_bgp
   sku           = var.vpn_gateway_sku
   generation    = var.vpn_gateway_generation
 
   ip_configuration {
-    name                          = "vnetGatewayConfig"
+    name                          = var.ip_configuration_name
     public_ip_address_id          = azurerm_public_ip.vpn_gateway.id
-    private_ip_address_allocation = "Dynamic"
+    private_ip_address_allocation = var.private_ip_address_allocation
     subnet_id                     = var.gateway_subnet_id
   }
 

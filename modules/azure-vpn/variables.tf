@@ -257,6 +257,49 @@ variable "gateway_only_mode" {
 }
 
 # ============================================================================
+# VPN GATEWAY IP CONFIGURATION
+# ============================================================================
+
+variable "gateway_type" {
+  description = "Type of the virtual network gateway (Vpn or ExpressRoute)"
+  type        = string
+  default     = "Vpn"
+  
+  validation {
+    condition     = contains(["Vpn", "ExpressRoute"], var.gateway_type)
+    error_message = "Gateway type must be Vpn or ExpressRoute."
+  }
+}
+
+variable "ip_configuration_name" {
+  description = "Name for the IP configuration of the VPN Gateway"
+  type        = string
+  default     = "vnetGatewayConfig"
+  
+  validation {
+    condition     = length(var.ip_configuration_name) > 0 && length(var.ip_configuration_name) <= 80
+    error_message = "IP configuration name must be between 1 and 80 characters."
+  }
+}
+
+variable "private_ip_address_allocation" {
+  description = "Private IP address allocation method for VPN Gateway (Dynamic or Static)"
+  type        = string
+  default     = "Dynamic"
+  
+  validation {
+    condition     = contains(["Dynamic", "Static"], var.private_ip_address_allocation)
+    error_message = "Private IP address allocation must be Dynamic or Static."
+  }
+}
+
+variable "active_active" {
+  description = "Enable active-active configuration for VPN Gateway (requires VpnGw2 or higher)"
+  type        = bool
+  default     = false
+}
+
+# ============================================================================
 # VALIDATION CONFIGURATION
 # ============================================================================
 

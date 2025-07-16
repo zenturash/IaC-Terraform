@@ -143,14 +143,11 @@ output "vpn_deployment_summary" {
     # Naming Information
     naming_configuration = {
       prefix            = var.resource_name_prefix
-      random_suffix     = var.use_random_suffix
-      suffix_used       = var.use_random_suffix ? local.suffix : "none"
     }
     
     # Auto-generation Information
     auto_features = {
       auto_tagging_enabled = var.enable_auto_tagging
-      random_suffix_used   = var.use_random_suffix
       validation_enabled   = var.validate_configuration_consistency
     }
   }
@@ -280,7 +277,7 @@ output "resource_names" {
     public_ip_name        = azurerm_public_ip.vpn_gateway.name
     local_gateway_name    = local.deploy_local_gateway ? azurerm_local_network_gateway.on_premises[0].name : null
     connection_name       = local.deploy_connection ? azurerm_virtual_network_gateway_connection.vpn_connection[0].name : null
-    naming_pattern        = "${var.resource_name_prefix}-{resource-type}${var.use_random_suffix ? "-{random}" : ""}"
+    naming_pattern        = "${var.resource_name_prefix}-{resource-type}"
   }
 }
 

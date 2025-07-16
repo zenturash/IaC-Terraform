@@ -1,33 +1,20 @@
 # ============================================================================
-# RANDOM RESOURCES FOR AUTO-GENERATION
-# ============================================================================
-
-# Random ID for unique resource naming
-resource "random_id" "main" {
-  count       = var.use_random_suffix ? 1 : 0
-  byte_length = 4
-}
-
-# ============================================================================
 # LOCAL VALUES FOR CONSISTENT NAMING AND CONFIGURATION
 # ============================================================================
 
 locals {
-  # Generate unique suffix for resource names
-  suffix = var.use_random_suffix ? "-${random_id.main[0].hex}" : ""
-  
-  # Smart resource names
-  vpn_gateway_name = var.vpn_gateway_name != null ? var.vpn_gateway_name : "${var.resource_name_prefix}-gateway${local.suffix}"
+  # Smart resource names (no random suffix)
+  vpn_gateway_name = var.vpn_gateway_name != null ? var.vpn_gateway_name : "${var.resource_name_prefix}-gateway"
   public_ip_name   = "pip-${local.vpn_gateway_name}"
   
   # Local network gateway name (if creating local gateway)
   local_gateway_name = var.local_network_gateway != null ? (
-    var.local_network_gateway.name != null ? var.local_network_gateway.name : "${var.resource_name_prefix}-local-gateway${local.suffix}"
+    var.local_network_gateway.name != null ? var.local_network_gateway.name : "${var.resource_name_prefix}-local-gateway"
   ) : null
   
   # VPN connection name (if creating connection)
   vpn_connection_name = var.vpn_connection != null ? (
-    var.vpn_connection.name != null ? var.vpn_connection.name : "${var.resource_name_prefix}-connection${local.suffix}"
+    var.vpn_connection.name != null ? var.vpn_connection.name : "${var.resource_name_prefix}-connection"
   ) : null
   
   # Smart Public IP configuration based on VPN Gateway SKU
@@ -56,7 +43,6 @@ locals {
     creation_date         = formatdate("YYYY-MM-DD", timestamp())
     creation_time         = formatdate("YYYY-MM-DD hh:mm:ss ZZZ", timestamp())
     creation_method       = "OpenTofu"
-    random_suffix_used    = var.use_random_suffix
   } : {}
   
   # Merge all tags

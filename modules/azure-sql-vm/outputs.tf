@@ -234,6 +234,38 @@ output "sql_authentication_type" {
 }
 
 # ============================================================================
+# SQL SERVER IAAS AGENT EXTENSION OUTPUTS
+# ============================================================================
+
+output "sql_extension_id" {
+  description = "ID of the SQL Server IaaS Agent Extension"
+  value       = azurerm_mssql_virtual_machine.main.id
+}
+
+output "sql_license_type" {
+  description = "SQL Server license type"
+  value       = azurerm_mssql_virtual_machine.main.sql_license_type
+}
+
+output "sql_workload_type" {
+  description = "SQL Server workload type for storage optimization"
+  value       = var.sql_workload_type
+}
+
+output "sql_extension_status" {
+  description = "SQL Server IaaS Agent Extension status information"
+  value = {
+    extension_installed = true
+    license_type       = azurerm_mssql_virtual_machine.main.sql_license_type
+    workload_type      = var.sql_workload_type
+    auto_backup_enabled = var.enable_auto_backup
+    auto_patching_enabled = var.enable_auto_patching
+    connectivity_type  = var.sql_connectivity_type
+    connectivity_port  = var.sql_port
+  }
+}
+
+# ============================================================================
 # CONNECTION INFORMATION (SQL SERVER SPECIFIC)
 # ============================================================================
 
@@ -393,15 +425,26 @@ output "sql_connection_guide" {
       rdp_port_info = "Default RDP port: 3389"
     }
     
-    # Post-Deployment Steps
+    # Extension Information
+    extension_info = {
+      extension_installed = true
+      license_type = azurerm_mssql_virtual_machine.main.sql_license_type
+      workload_type = var.sql_workload_type
+      automatic_configuration = "SQL Server IaaS Agent Extension automatically configures SQL Server"
+      storage_optimization = "Data files: F:\\ (LUN ${azurerm_virtual_machine_data_disk_attachment.data_disk.lun}), Log files: G:\\ (LUN ${azurerm_virtual_machine_data_disk_attachment.log_disk.lun})"
+      authentication_mode = "Mixed Mode (SQL + Windows Authentication)"
+    }
+    
+    # Post-Deployment Steps (Updated for Extension)
     post_deployment_steps = [
-      "1. Connect to VM via RDP using the provided connection string",
-      "2. Initialize and format the data disk (LUN ${azurerm_virtual_machine_data_disk_attachment.data_disk.lun}) for SQL Server database files",
-      "3. Initialize and format the log disk (LUN ${azurerm_virtual_machine_data_disk_attachment.log_disk.lun}) for SQL Server transaction log files",
-      "4. Configure SQL Server to use the new disks for database and log file storage",
-      "5. Configure SQL Server authentication and connectivity as needed",
-      "6. Test SQL Server connectivity using the provided connection string",
-      "7. Configure firewall rules if using public IP access"
+      "1. SQL Server is automatically configured by the IaaS Agent Extension during VM deployment",
+      "2. Data files are automatically placed on F:\\ drive (LUN ${azurerm_virtual_machine_data_disk_attachment.data_disk.lun})",
+      "3. Log files are automatically placed on G:\\ drive (LUN ${azurerm_virtual_machine_data_disk_attachment.log_disk.lun})",
+      "4. Connect to VM via RDP using: ${var.enable_public_ip ? "mstsc /v:${azurerm_public_ip.main[0].ip_address}" : "mstsc /v:${azurerm_network_interface.main.private_ip_address}"}",
+      "5. Connect to SQL Server using SQL Server Management Studio or Azure Data Studio",
+      "6. SQL Server authentication is enabled with the VM admin credentials (${azurerm_windows_virtual_machine.main.admin_username})",
+      "7. Monitor SQL Server through Azure portal SQL Server blade for management and monitoring",
+      "8. Configure additional databases and users as needed"
     ]
   }
 }

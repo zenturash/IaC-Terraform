@@ -149,6 +149,63 @@ virtual_machines = {
   }
 }
 
+# SQL Server Virtual Machines (Test SQL Server Module)
+sql_server_vms = {
+  "sql-test-01" = {
+    # Required variables
+    subnet_name         = "subnet-app"  # Deploy to app subnet in spoke
+    resource_group_name = "rg-sql-test"
+    admin_username      = "azureuser"   # Uses global admin_username
+    admin_password      = "ComplexPassword123!"  # Uses global admin_password
+    
+    # Optional configuration - using defaults where possible
+    vm_size        = "Standard_D4s_v3"  # SQL Server optimized size
+    sql_edition    = "Standard"         # SQL Server Standard edition
+    spoke_name     = "test-workload"    # Deploy to test-workload spoke
+    
+    # Storage configuration - using module defaults
+    # data_disk_config uses default: 100GB Premium_LRS with ReadOnly caching
+    # log_disk_config uses default: 50GB Premium_LRS with None caching
+    
+    # Network configuration
+    enable_public_ip = true   # Enable for testing (change to false for production)
+    create_nsg       = true   # Create NSG with explicit rules
+    
+    # SQL Server security rules
+    sql_nsg_rules = [
+      {
+        name                       = "AllowSQLFromApp"
+        priority                   = 1000
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "1433"
+        source_address_prefix      = "10.2.0.0/24"  # Allow from subnet-test
+        destination_address_prefix = "*"
+      },
+      {
+        name                       = "AllowRDPFromOffice"
+        priority                   = 1010
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "3389"
+        source_address_prefix      = "*"  # Allow from anywhere for testing
+        destination_address_prefix = "*"
+      }
+    ]
+    
+    # Tags
+    tags = {
+      role        = "database"
+      environment = "test"
+      sql_edition = "standard"
+    }
+  }
+}
+
 
 # ========================================
 # TESTING INSTRUCTIONS

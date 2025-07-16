@@ -259,3 +259,48 @@ resource "azurerm_virtual_machine_data_disk_attachment" "log_disk" {
   lun                = var.log_disk_config.lun
   caching            = var.log_disk_config.caching
 }
+
+# ============================================================================
+# SQL SERVER IAAS AGENT EXTENSION
+# ============================================================================
+
+# SQL Server IaaS Agent Extension for basic SQL Server management
+resource "azurerm_mssql_virtual_machine" "main" {
+  virtual_machine_id = azurerm_windows_virtual_machine.main.id
+  sql_license_type   = var.sql_license_type
+  
+  # SQL Server connectivity configuration
+  sql_connectivity_update_password = var.admin_password
+  sql_connectivity_update_username = var.admin_username  # Same as VM admin (as requested)
+  sql_connectivity_type            = var.sql_connectivity_type
+  sql_connectivity_port            = var.sql_port
+  
+  # Auto backup configuration (optional)
+  dynamic "auto_backup" {
+    for_each = var.enable_auto_backup ? [1] : []
+    content {
+      retention_period_in_days = var.auto_backup_retention_days
+      storage_blob_endpoint    = var.backup_storage_endpoint
+      storage_account_access_key = var.backup_storage_access_key
+    }
+  }
+  
+  # Auto patching configuration (optional)
+  dynamic "auto_patching" {
+    for_each = var.enable_auto_patching ? [1] : []
+    content {
+      day_of_week                            = var.auto_patching_day_of_week
+      maintenance_window_starting_hour       = var.auto_patching_start_hour
+      maintenance_window_duration_in_minutes = var.auto_patching_window_duration
+    }
+  }
+  
+  tags = local.common_tags
+  
+  # Ensure the extension is installed after VM and disks are ready
+  depends_on = [
+    azurerm_windows_virtual_machine.main,
+    azurerm_virtual_machine_data_disk_attachment.data_disk,
+    azurerm_virtual_machine_data_disk_attachment.log_disk
+  ]
+}

@@ -468,3 +468,100 @@ variable "sql_authentication_type" {
     error_message = "SQL authentication type must be either 'SQL' or 'Windows'."
   }
 }
+
+# ============================================================================
+# SQL SERVER IAAS AGENT EXTENSION CONFIGURATION
+# ============================================================================
+
+variable "sql_license_type" {
+  description = "SQL Server license type (PAYG = Pay-as-you-go, AHUB = Azure Hybrid Benefit, DR = Disaster Recovery)"
+  type        = string
+  default     = "PAYG"
+  
+  validation {
+    condition     = contains(["PAYG", "AHUB", "DR"], var.sql_license_type)
+    error_message = "SQL license type must be one of: PAYG, AHUB, DR."
+  }
+}
+
+variable "sql_workload_type" {
+  description = "SQL Server workload type for storage optimization (GENERAL, OLTP, DW)"
+  type        = string
+  default     = "GENERAL"
+  
+  validation {
+    condition     = contains(["GENERAL", "OLTP", "DW"], var.sql_workload_type)
+    error_message = "SQL workload type must be one of: GENERAL, OLTP, DW."
+  }
+}
+
+variable "enable_auto_backup" {
+  description = "Whether to enable SQL Server automated backup"
+  type        = bool
+  default     = false
+}
+
+variable "auto_backup_retention_days" {
+  description = "Retention period for automated backups in days (1-90)"
+  type        = number
+  default     = 30
+  
+  validation {
+    condition     = var.auto_backup_retention_days >= 1 && var.auto_backup_retention_days <= 90
+    error_message = "Auto backup retention must be between 1 and 90 days."
+  }
+}
+
+variable "backup_storage_endpoint" {
+  description = "Storage blob endpoint for automated backups (required if enable_auto_backup is true)"
+  type        = string
+  default     = null
+}
+
+variable "backup_storage_access_key" {
+  description = "Storage account access key for automated backups (required if enable_auto_backup is true)"
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "enable_auto_patching" {
+  description = "Whether to enable SQL Server automated patching"
+  type        = bool
+  default     = false
+}
+
+variable "auto_patching_day_of_week" {
+  description = "Day of week for automated patching (Sunday, Monday, etc.)"
+  type        = string
+  default     = "Sunday"
+  
+  validation {
+    condition = contains([
+      "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+    ], var.auto_patching_day_of_week)
+    error_message = "Auto patching day must be a valid day of the week."
+  }
+}
+
+variable "auto_patching_start_hour" {
+  description = "Start hour for automated patching maintenance window (0-23)"
+  type        = number
+  default     = 2
+  
+  validation {
+    condition     = var.auto_patching_start_hour >= 0 && var.auto_patching_start_hour <= 23
+    error_message = "Auto patching start hour must be between 0 and 23."
+  }
+}
+
+variable "auto_patching_window_duration" {
+  description = "Duration of automated patching maintenance window in minutes (30-180)"
+  type        = number
+  default     = 60
+  
+  validation {
+    condition     = var.auto_patching_window_duration >= 30 && var.auto_patching_window_duration <= 180
+    error_message = "Auto patching window duration must be between 30 and 180 minutes."
+  }
+}

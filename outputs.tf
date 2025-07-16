@@ -81,6 +81,7 @@ output "vnet_peering" {
 # Virtual Machines Information
 output "virtual_machines" {
   description = "Information about all created virtual machines"
+  sensitive   = true
   value = var.deploy_components.vms ? merge(
     {
       for vm_name, vm_module in module.vms_single : vm_name => {

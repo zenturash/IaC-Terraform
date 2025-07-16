@@ -1,26 +1,10 @@
 # ============================================================================
-# RANDOM RESOURCES FOR AUTO-GENERATION
-# ============================================================================
-
-# Random ID for unique resource naming
-resource "random_id" "main" {
-  count       = var.use_random_suffix ? 1 : 0
-  byte_length = 4
-}
-
-# No auto-generation - users must provide credentials explicitly
-
-# ============================================================================
 # LOCAL VALUES FOR CONSISTENT NAMING AND CONFIGURATION
 # ============================================================================
 
 locals {
-  # Generate unique suffix for resource names
-  random_suffix = var.use_random_suffix ? random_id.main[0].hex : ""
-  suffix = var.use_random_suffix ? "-${local.random_suffix}" : ""
-  
   # Determine VM name (auto-generate if not provided)
-  vm_name = var.vm_name != null ? var.vm_name : "vm${local.suffix}"
+  vm_name = var.vm_name != null ? var.vm_name : "vm-${formatdate("YYYYMMDD-hhmm", timestamp())}"
   
   # Use provided admin password directly
   admin_password = var.admin_password
@@ -31,8 +15,8 @@ locals {
   nic_name       = "${var.nic_name_prefix}-${local.vm_name}"
   os_disk_name   = var.os_disk_name != null ? var.os_disk_name : "osdisk-${local.vm_name}"
   
-  # Resource group name with suffix if creating new RG
-  resource_group_name = var.create_resource_group ? "${var.resource_group_name}${local.suffix}" : var.resource_group_name
+  # Resource group name (no suffix needed)
+  resource_group_name = var.resource_group_name
   
   # Determine image configuration (use provided or OS-specific defaults)
   os_defaults = var.os_type == "Windows" ? var.windows_image_defaults : var.linux_image_defaults

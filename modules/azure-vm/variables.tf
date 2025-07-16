@@ -28,7 +28,7 @@ variable "os_type" {
 }
 
 variable "vm_name" {
-  description = "Name of the virtual machine. If null, will auto-generate with random suffix"
+  description = "Name of the virtual machine. If null, will auto-generate with timestamp"
   type        = string
   default     = null
   
@@ -387,11 +387,6 @@ variable "os_disk_name" {
   default     = null
 }
 
-variable "use_random_suffix" {
-  description = "Whether to add random suffix to resource names for uniqueness"
-  type        = bool
-  default     = true
-}
 
 # ============================================================================
 # TAGGING CONFIGURATION

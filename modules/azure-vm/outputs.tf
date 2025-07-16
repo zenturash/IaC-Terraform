@@ -272,7 +272,6 @@ output "vm_summary" {
     auto_generated_resources = {
       vm_name    = var.vm_name == null
       password   = var.admin_password == null
-      random_suffix = var.use_random_suffix
     }
   }
 }

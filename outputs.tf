@@ -88,12 +88,12 @@ output "virtual_machines" {
         vm_name              = vm_module.vm_name
         vm_size              = vm_module.vm_size
         resource_group_name  = vm_module.resource_group_name
-        location             = vm_module.location
+        location             = vm_module.vm_location
         private_ip_address   = vm_module.private_ip_address
         public_ip_address    = vm_module.public_ip_address
         rdp_connection_string = vm_module.rdp_connection_string
         admin_username       = vm_module.admin_username
-        tags                 = vm_module.tags
+        tags                 = vm_module.applied_tags
       }
     },
     {
@@ -102,12 +102,12 @@ output "virtual_machines" {
         vm_name              = vm_module.vm_name
         vm_size              = vm_module.vm_size
         resource_group_name  = vm_module.resource_group_name
-        location             = vm_module.location
+        location             = vm_module.vm_location
         private_ip_address   = vm_module.private_ip_address
         public_ip_address    = vm_module.public_ip_address
         rdp_connection_string = vm_module.rdp_connection_string
         admin_username       = vm_module.admin_username
-        tags                 = vm_module.tags
+        tags                 = vm_module.applied_tags
       }
     }
   ) : {}

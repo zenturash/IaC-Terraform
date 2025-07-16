@@ -33,7 +33,7 @@ variable "global_tags" {
 variable "virtual_machines" {
   description = "Map of virtual machines to create"
   type = map(object({
-    vm_size             = string
+    vm_size             = optional(string, "Standard_B2s")  # Made optional with default to match module
     subnet_name         = string
     resource_group_name = string
     enable_public_ip    = optional(bool, true)
@@ -62,7 +62,7 @@ variable "virtual_machines" {
         "Standard_D2s_v3", "Standard_D4s_v3", "Standard_D8s_v3",
         "Standard_E2s_v3", "Standard_E4s_v3", "Standard_E8s_v3",
         "Standard_F2s_v2", "Standard_F4s_v2", "Standard_F8s_v2"
-      ], vm.vm_size)
+      ], vm.vm_size != null ? vm.vm_size : "Standard_B2s")
     ])
     error_message = "All VM sizes must be valid Azure VM sizes."
   }

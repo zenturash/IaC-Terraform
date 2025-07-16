@@ -118,11 +118,6 @@ variable "peering_name_prefix" {
   }
 }
 
-variable "use_random_suffix" {
-  description = "Add random suffix to peering names for uniqueness across deployments"
-  type        = bool
-  default     = true
-}
 
 # ============================================================================
 # TAGGING CONFIGURATION

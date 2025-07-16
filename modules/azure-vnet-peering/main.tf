@@ -1,30 +1,17 @@
 # ============================================================================
-# RANDOM RESOURCES FOR AUTO-GENERATION
-# ============================================================================
-
-# Random ID for unique peering naming
-resource "random_id" "main" {
-  count       = var.use_random_suffix ? 1 : 0
-  byte_length = 4
-}
-
-# ============================================================================
 # LOCAL VALUES FOR CONSISTENT NAMING AND CONFIGURATION
 # ============================================================================
 
 locals {
-  # Generate unique suffix for peering names
-  suffix = var.use_random_suffix ? "-${random_id.main[0].hex}" : ""
-  
-  # Smart peering names
+  # Smart peering names (no random suffix)
   hub_to_spoke_names = {
     for k, v in var.peering_connections : k => 
-      "${var.peering_name_prefix}-${var.hub_vnet_name}-to-${k}${local.suffix}"
+      "${var.peering_name_prefix}-${var.hub_vnet_name}-to-${k}"
   }
   
   spoke_to_hub_names = {
     for k, v in var.peering_connections : k => 
-      "${var.peering_name_prefix}-${k}-to-${var.hub_vnet_name}${local.suffix}"
+      "${var.peering_name_prefix}-${k}-to-${var.hub_vnet_name}"
   }
   
   # Enhanced auto-tagging
@@ -39,7 +26,6 @@ locals {
     creation_date         = formatdate("YYYY-MM-DD", timestamp())
     creation_time         = formatdate("YYYY-MM-DD hh:mm:ss ZZZ", timestamp())
     creation_method       = "OpenTofu"
-    random_suffix_used    = var.use_random_suffix
   } : {}
   
   # Merge all tags

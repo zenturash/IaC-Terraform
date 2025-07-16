@@ -70,8 +70,6 @@ output "peering_deployment_summary" {
     # Naming Information
     naming_configuration = {
       prefix            = var.peering_name_prefix
-      random_suffix     = var.use_random_suffix
-      suffix_used       = var.use_random_suffix ? local.suffix : "none"
     }
     
     # Peering Names
@@ -83,7 +81,6 @@ output "peering_deployment_summary" {
     # Auto-generation Information
     auto_features = {
       auto_tagging_enabled = var.enable_auto_tagging
-      random_suffix_used   = var.use_random_suffix
       validation_enabled   = var.validate_gateway_consistency
     }
   }
@@ -173,6 +170,6 @@ output "resource_names" {
   value = {
     hub_to_spoke_peerings = values(local.hub_to_spoke_names)
     spoke_to_hub_peerings = values(local.spoke_to_hub_names)
-    naming_pattern = "${var.peering_name_prefix}-{vnet1}-to-{vnet2}${var.use_random_suffix ? "-{random}" : ""}"
+    naming_pattern = "${var.peering_name_prefix}-{vnet1}-to-{vnet2}"
   }
 }

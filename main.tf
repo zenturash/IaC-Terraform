@@ -327,3 +327,102 @@ module "vpn_hub" {
 
   depends_on = [module.hub_networking]
 }
+
+# ============================================================================
+# SQL SERVER VIRTUAL MACHINES
+# ============================================================================
+
+# SQL Server VMs (Single VNet mode)
+module "sql_vms_single" {
+  for_each = var.architecture_mode == "single-vnet" ? var.sql_server_vms : {}
+  source = "./modules/azure-sql-vm"
+
+  # Required variables
+  subnet_id           = local.vm_vnet_subnet_ids[each.value.subnet_name]
+  resource_group_name = each.value.resource_group_name
+  admin_username      = each.value.admin_username
+  admin_password      = each.value.admin_password
+
+  # Optional variables with defaults
+  vm_name             = each.key  # Use the key as VM name
+  vm_size             = each.value.vm_size
+  sql_edition         = each.value.sql_edition
+  location            = var.location
+  enable_public_ip    = each.value.enable_public_ip
+  
+  # Storage configuration
+  data_disk_config = each.value.data_disk_config
+  log_disk_config  = each.value.log_disk_config
+  
+  # Security configuration
+  create_nsg    = each.value.create_nsg
+  sql_nsg_rules = each.value.sql_nsg_rules
+  
+  # Tags
+  tags = merge(local.common_tags, {
+    tier = "sql-server"
+    architecture = var.architecture_mode
+  }, each.value.tags)
+
+  # SQL Server VMs deployed after networking
+  depends_on = [
+    module.single_networking
+  ]
+}
+
+# SQL Server VMs (Hub-Spoke mode - deployed across multiple spokes)
+module "sql_vms_spoke" {
+  for_each = var.architecture_mode == "hub-spoke" ? var.sql_server_vms : {}
+  source = "./modules/azure-sql-vm"
+
+  providers = {
+    azurerm = azurerm.spoke
+  }
+
+  # Required variables with subnet resolution logic
+  subnet_id = each.value.spoke_name != null ? (
+    # If spoke_name is specified, look for subnet in that specific spoke
+    contains(keys(module.spoke_networking), each.value.spoke_name) ? 
+      module.spoke_networking[each.value.spoke_name].subnet_ids[each.value.subnet_name] :
+      # Fallback to hub if spoke not found and subnet exists in hub
+      (length(module.hub_networking) > 0 && contains(keys(module.hub_networking[0].subnet_ids), each.value.subnet_name) ?
+        module.hub_networking[0].subnet_ids[each.value.subnet_name] :
+        null
+      )
+  ) : (
+    # If no spoke_name specified, use backward compatibility logic
+    length(module.spoke_networking) > 0 ? values(module.spoke_networking)[0].subnet_ids[each.value.subnet_name] :
+    (length(module.hub_networking) > 0 ? module.hub_networking[0].subnet_ids[each.value.subnet_name] : null)
+  )
+  resource_group_name = each.value.resource_group_name
+  admin_username      = each.value.admin_username
+  admin_password      = each.value.admin_password
+
+  # Optional variables with defaults
+  vm_name             = each.key  # Use the key as VM name
+  vm_size             = each.value.vm_size
+  sql_edition         = each.value.sql_edition
+  location            = var.location
+  enable_public_ip    = each.value.enable_public_ip
+  
+  # Storage configuration
+  data_disk_config = each.value.data_disk_config
+  log_disk_config  = each.value.log_disk_config
+  
+  # Security configuration
+  create_nsg    = each.value.create_nsg
+  sql_nsg_rules = each.value.sql_nsg_rules
+  
+  # Tags
+  tags = merge(local.common_tags, {
+    tier = "sql-server"
+    architecture = var.architecture_mode
+    spoke_name = each.value.spoke_name
+  }, each.value.tags)
+
+  # SQL Server VMs deployed after networking
+  depends_on = [
+    module.spoke_networking, 
+    module.hub_networking
+  ]
+}

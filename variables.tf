@@ -208,3 +208,82 @@ variable "vnet_peering" {
     use_remote_gateways        = true
   }
 }
+
+# SQL Server VMs Configuration
+variable "sql_server_vms" {
+  description = "Map of SQL Server VMs to create using the azure-sql-vm module"
+  type = map(object({
+    # Required variables
+    subnet_name         = string
+    resource_group_name = string
+    admin_username      = string
+    admin_password      = string
+    
+    # Optional SQL Server configuration
+    vm_size             = optional(string, "Standard_D4s_v3")
+    sql_edition         = optional(string, "Standard")
+    spoke_name          = optional(string)  # Which spoke to deploy to (hub-spoke mode only)
+    
+    # Optional storage configuration
+    data_disk_config = optional(object({
+      size_gb              = number
+      storage_account_type = string
+      caching              = string
+      lun                  = number
+    }), {
+      size_gb              = 100
+      storage_account_type = "Premium_LRS"
+      caching              = "ReadOnly"
+      lun                  = 0
+    })
+    
+    log_disk_config = optional(object({
+      size_gb              = number
+      storage_account_type = string
+      caching              = string
+      lun                  = number
+    }), {
+      size_gb              = 50
+      storage_account_type = "Premium_LRS"
+      caching              = "None"
+      lun                  = 1
+    })
+    
+    # Optional network configuration
+    enable_public_ip = optional(bool, false)
+    create_nsg       = optional(bool, false)
+    sql_nsg_rules = optional(list(object({
+      name                       = string
+      priority                   = number
+      direction                  = string
+      access                     = string
+      protocol                   = string
+      source_port_range          = string
+      destination_port_range     = string
+      source_address_prefix      = string
+      destination_address_prefix = string
+    })), [])
+    
+    # Optional tags
+    tags = optional(map(string), {})
+  }))
+  default = {}
+  
+  validation {
+    condition = alltrue([
+      for vm in var.sql_server_vms : contains([
+        "Standard_D2s_v3", "Standard_D4s_v3", "Standard_D8s_v3", "Standard_D16s_v3",
+        "Standard_E4s_v3", "Standard_E8s_v3", "Standard_E16s_v3", "Standard_E32s_v3",
+        "Standard_M8ms", "Standard_M16ms", "Standard_M32ms", "Standard_M64ms"
+      ], vm.vm_size != null ? vm.vm_size : "Standard_D4s_v3")
+    ])
+    error_message = "All SQL Server VM sizes must be suitable for SQL Server workloads."
+  }
+  
+  validation {
+    condition = alltrue([
+      for vm in var.sql_server_vms : contains(["Express", "Standard", "Enterprise"], vm.sql_edition != null ? vm.sql_edition : "Standard")
+    ])
+    error_message = "SQL Server edition must be one of: Express, Standard, Enterprise."
+  }
+}

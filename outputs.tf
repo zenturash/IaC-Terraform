@@ -149,6 +149,76 @@ output "rdp_connections" {
   ) : {}
 }
 
+# SQL Server VMs Information
+output "sql_server_vms" {
+  description = "Information about all created SQL Server virtual machines"
+  sensitive   = true
+  value = merge(
+    {
+      for vm_name, vm_module in module.sql_vms_single : vm_name => {
+        vm_id                    = vm_module.vm_id
+        vm_name                  = vm_module.vm_name
+        vm_size                  = vm_module.vm_size
+        resource_group_name      = vm_module.resource_group_name
+        location                 = vm_module.vm_location
+        private_ip_address       = vm_module.private_ip_address
+        public_ip_address        = vm_module.public_ip_address
+        rdp_connection_string    = vm_module.rdp_connection_string
+        sql_connection_string    = vm_module.sql_connection_string
+        sql_server_edition       = vm_module.sql_server_edition
+        sql_server_port          = vm_module.sql_server_port
+        admin_username           = vm_module.admin_username
+        data_disk_id             = vm_module.data_disk_id
+        data_disk_size_gb        = vm_module.data_disk_size_gb
+        log_disk_id              = vm_module.log_disk_id
+        log_disk_size_gb         = vm_module.log_disk_size_gb
+        tags                     = vm_module.applied_tags
+      }
+    },
+    {
+      for vm_name, vm_module in module.sql_vms_spoke : vm_name => {
+        vm_id                    = vm_module.vm_id
+        vm_name                  = vm_module.vm_name
+        vm_size                  = vm_module.vm_size
+        resource_group_name      = vm_module.resource_group_name
+        location                 = vm_module.vm_location
+        private_ip_address       = vm_module.private_ip_address
+        public_ip_address        = vm_module.public_ip_address
+        rdp_connection_string    = vm_module.rdp_connection_string
+        sql_connection_string    = vm_module.sql_connection_string
+        sql_server_edition       = vm_module.sql_server_edition
+        sql_server_port          = vm_module.sql_server_port
+        admin_username           = vm_module.admin_username
+        data_disk_id             = vm_module.data_disk_id
+        data_disk_size_gb        = vm_module.data_disk_size_gb
+        log_disk_id              = vm_module.log_disk_id
+        log_disk_size_gb         = vm_module.log_disk_size_gb
+        tags                     = vm_module.applied_tags
+      }
+    }
+  )
+}
+
+# SQL Server Connection Strings
+output "sql_connections" {
+  description = "Map of SQL Server VM names to their connection strings"
+  sensitive   = true
+  value = merge(
+    { for vm_name, vm_module in module.sql_vms_single : vm_name => vm_module.sql_connection_string },
+    { for vm_name, vm_module in module.sql_vms_spoke : vm_name => vm_module.sql_connection_string }
+  )
+}
+
+# SQL Server Connection Guide
+output "sql_connection_guide" {
+  description = "Complete connection guide for all SQL Server VMs"
+  sensitive   = true
+  value = merge(
+    { for vm_name, vm_module in module.sql_vms_single : vm_name => vm_module.sql_connection_guide },
+    { for vm_name, vm_module in module.sql_vms_spoke : vm_name => vm_module.sql_connection_guide }
+  )
+}
+
 # VPN Information (conditional)
 output "vpn_gateway_info" {
   description = "VPN Gateway information (if VPN is enabled)"

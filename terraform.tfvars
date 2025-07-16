@@ -7,7 +7,7 @@ architecture_mode = "hub-spoke"
 # Global settings
 admin_username = "azureuser"
 admin_password = "ComplexPassword123!"
-location       = "West Europe"
+# location = "West Europe" # Uses module default
 
 # Global Tags - Applied to all resources
 global_tags = {
@@ -69,13 +69,13 @@ vnet_peering = {
 }
 
 # VPN Configuration (Controlled by deploy_components.vpn_gateway)
-# Updated for generalized azure-vpn module
+# Optimized to use module defaults where possible
 vpn_configuration = {
-  # VPN Gateway configuration (optional - has defaults)
+  # VPN Gateway configuration
   vpn_gateway_name = "vpn-gateway-test"
-  vpn_gateway_sku  = "Basic"              # Cost-effective for testing
-  vpn_type         = "RouteBased"
-  enable_bgp       = false
+  vpn_gateway_sku  = "Basic"              # Override default (VpnGw1) for cost-effective testing
+  # vpn_type = "RouteBased" (default)
+  # enable_bgp = false (default)
   
   # Local Network Gateway configuration (optional - null means gateway-only mode)
   local_network_gateway = {
@@ -86,26 +86,25 @@ vpn_configuration = {
   
   # VPN Connection configuration (optional - null means no connection)
   vpn_connection = {
-    name                = "vpn-connection-test" # Optional - will auto-generate if null
-    shared_key          = "TestSharedKey123!"  # Required - Pre-shared key
-    connection_protocol = "IKEv2"              # Optional - defaults to IKEv2
+    name       = "vpn-connection-test" # Optional - will auto-generate if null
+    shared_key = "TestSharedKey123!"  # Required - Pre-shared key
+    # connection_protocol = "IKEv2" (default)
   }
 }
 
 # Test Virtual Machines (Deployed in Spoke Subscription)
-# Updated for generalized azure-vm module
+# Optimized to use module defaults where possible
 virtual_machines = {
   "test-vm-01" = {
-    vm_size             = "Standard_B2s"        # Standard VM size for testing
+    # vm_size = "Standard_B2s" (default)
     subnet_name         = "subnet-test"
     resource_group_name = "rg-test-vm"
-    enable_public_ip    = true                  # Enable for easy testing access
-    os_disk_type        = "Standard_LRS"        # Cost-effective storage for testing
+    enable_public_ip    = true                  # Override default (false) for easy testing access
+    os_disk_type        = "Standard_LRS"        # Override default (Premium_LRS) for cost-effective testing
     spoke_name          = "test-workload"       # Deploy to test-workload spoke
     
-    # Optional: Override global admin credentials (if needed)
-    admin_username      = null                  # Use global admin_username
-    admin_password      = null                  # Use global admin_password
+    # admin_username = null (uses global)
+    # admin_password = null (uses global)
     
     # NSG rules (generalized module will create NSG only if rules are provided)
     nsg_rules = [
@@ -123,16 +122,15 @@ virtual_machines = {
     ]
   }
   "test-vm-02" = {
-    vm_size             = "Standard_B2s"        # Standard VM size for testing
+    # vm_size = "Standard_B2s" (default)
     subnet_name         = "subnet-test"
     resource_group_name = "rg-test-vm2"
-    enable_public_ip    = true                  # Enable for easy testing access
-    os_disk_type        = "Standard_LRS"        # Cost-effective storage for testing
+    enable_public_ip    = true                  # Override default (false) for easy testing access
+    os_disk_type        = "Standard_LRS"        # Override default (Premium_LRS) for cost-effective testing
     spoke_name          = "test-workload"       # Deploy to test-workload spoke
     
-    # Optional: Override global admin credentials (if needed)
-    admin_username      = null                  # Use global admin_username
-    admin_password      = null                  # Use global admin_password
+    # admin_username = null (uses global)
+    # admin_password = null (uses global)
     
     # NSG rules (generalized module will create NSG only if rules are provided)
     nsg_rules = [

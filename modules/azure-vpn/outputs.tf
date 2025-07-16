@@ -93,7 +93,7 @@ output "bgp_settings" {
   value = var.enable_bgp ? {
     asn         = azurerm_virtual_network_gateway.vpn_gateway.bgp_settings[0].asn
     peer_weight = azurerm_virtual_network_gateway.vpn_gateway.bgp_settings[0].peer_weight
-    bgp_peering_address = azurerm_virtual_network_gateway.vpn_gateway.bgp_settings[0].bgp_peering_address
+    peering_addresses = azurerm_virtual_network_gateway.vpn_gateway.bgp_settings[0].peering_addresses
   } : null
 }
 

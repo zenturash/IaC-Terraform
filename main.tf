@@ -186,25 +186,22 @@ module "vms_single" {
   for_each = var.architecture_mode == "single-vnet" && var.deploy_components.vms ? var.virtual_machines : {}
   source = "./modules/azure-vm"
 
-  # Required variables
-  vm_name        = each.key
-  admin_username = each.value.admin_username != null ? each.value.admin_username : var.admin_username
-  admin_password = each.value.admin_password != null ? each.value.admin_password : var.admin_password
-  subnet_id      = local.vm_vnet_subnet_ids[each.value.subnet_name]
-
-  # Optional variables
-  vm_size          = each.value.vm_size
-  location         = var.location
-  enable_public_ip = each.value.enable_public_ip
-
-  # Network configuration - separate RG for each VM
+  # Required variables (generalized module)
+  subnet_id           = local.vm_vnet_subnet_ids[each.value.subnet_name]
+  admin_username      = each.value.admin_username != null ? each.value.admin_username : var.admin_username
   resource_group_name = each.value.resource_group_name
 
-  # Storage configuration
-  os_disk_type = each.value.os_disk_type
+  # Optional variables with smart defaults
+  vm_name             = each.key  # Use the key as VM name
+  admin_password      = each.value.admin_password != null ? each.value.admin_password : var.admin_password
+  vm_size             = each.value.vm_size
+  location            = var.location
+  enable_public_ip    = each.value.enable_public_ip
+  os_disk_type        = each.value.os_disk_type
   
-  # NSG configuration
-  nsg_rules = each.value.nsg_rules
+  # NSG configuration (generalized approach)
+  create_nsg = length(each.value.nsg_rules) > 0
+  nsg_rules  = each.value.nsg_rules
 
   # Tags configuration
   tags = merge(local.common_tags, {
@@ -227,12 +224,7 @@ module "vms_spoke" {
     azurerm = azurerm.spoke
   }
 
-  # Required variables
-  vm_name        = each.key
-  admin_username = each.value.admin_username != null ? each.value.admin_username : var.admin_username
-  admin_password = each.value.admin_password != null ? each.value.admin_password : var.admin_password
-  
-  # Determine subnet ID based on spoke_name and subnet_name
+  # Required variables (generalized module)
   subnet_id = each.value.spoke_name != null ? (
     # If spoke_name is specified, look for subnet in that specific spoke
     contains(keys(module.spoke_networking), each.value.spoke_name) ? 
@@ -247,20 +239,20 @@ module "vms_spoke" {
     length(module.spoke_networking) > 0 ? values(module.spoke_networking)[0].subnet_ids[each.value.subnet_name] :
     (length(module.hub_networking) > 0 ? module.hub_networking[0].subnet_ids[each.value.subnet_name] : null)
   )
-
-  # Optional variables
-  vm_size          = each.value.vm_size
-  location         = var.location
-  enable_public_ip = each.value.enable_public_ip
-
-  # Network configuration - separate RG for each VM
+  admin_username      = each.value.admin_username != null ? each.value.admin_username : var.admin_username
   resource_group_name = each.value.resource_group_name
 
-  # Storage configuration
-  os_disk_type = each.value.os_disk_type
+  # Optional variables with smart defaults
+  vm_name             = each.key  # Use the key as VM name
+  admin_password      = each.value.admin_password != null ? each.value.admin_password : var.admin_password
+  vm_size             = each.value.vm_size
+  location            = var.location
+  enable_public_ip    = each.value.enable_public_ip
+  os_disk_type        = each.value.os_disk_type
   
-  # NSG configuration
-  nsg_rules = each.value.nsg_rules
+  # NSG configuration (generalized approach)
+  create_nsg = length(each.value.nsg_rules) > 0
+  nsg_rules  = each.value.nsg_rules
 
   # Tags configuration
   tags = merge(local.common_tags, {
@@ -281,22 +273,20 @@ module "vpn_single" {
   count  = var.architecture_mode == "single-vnet" && var.deploy_components.vpn_gateway ? 1 : 0
   source = "./modules/azure-vpn"
 
-  # Required variables
-  vpn_gateway_name    = var.vpn_configuration.vpn_gateway_name
+  # Required variables (generalized module)
   resource_group_name = local.vpn_vnet_info.resource_group_name
   location            = var.location
   gateway_subnet_id   = local.vpn_vnet_info.gateway_subnet_id
 
-  # VPN Gateway configuration
-  vpn_gateway_sku        = var.vpn_configuration.vpn_gateway_sku
-  vpn_type              = var.vpn_configuration.vpn_type
-  enable_bgp            = var.vpn_configuration.enable_bgp
+  # Optional VPN Gateway configuration
+  vpn_gateway_name = var.vpn_configuration.vpn_gateway_name
+  vpn_gateway_sku  = var.vpn_configuration.vpn_gateway_sku
+  vpn_type         = var.vpn_configuration.vpn_type
+  enable_bgp       = var.vpn_configuration.enable_bgp
 
-  # Local Network Gateway configuration
+  # Optional Local Network Gateway and Connection configuration
   local_network_gateway = var.vpn_configuration.local_network_gateway
-
-  # VPN Connection configuration
-  vpn_connection = var.vpn_configuration.vpn_connection
+  vpn_connection        = var.vpn_configuration.vpn_connection
 
   tags = merge(local.common_tags, {
     tier = "vpn"
@@ -315,22 +305,20 @@ module "vpn_hub" {
     azurerm = azurerm.hub
   }
 
-  # Required variables
-  vpn_gateway_name    = var.vpn_configuration.vpn_gateway_name
+  # Required variables (generalized module)
   resource_group_name = local.vpn_vnet_info.resource_group_name
   location            = var.location
   gateway_subnet_id   = local.vpn_vnet_info.gateway_subnet_id
 
-  # VPN Gateway configuration
-  vpn_gateway_sku        = var.vpn_configuration.vpn_gateway_sku
-  vpn_type              = var.vpn_configuration.vpn_type
-  enable_bgp            = var.vpn_configuration.enable_bgp
+  # Optional VPN Gateway configuration
+  vpn_gateway_name = var.vpn_configuration.vpn_gateway_name
+  vpn_gateway_sku  = var.vpn_configuration.vpn_gateway_sku
+  vpn_type         = var.vpn_configuration.vpn_type
+  enable_bgp       = var.vpn_configuration.enable_bgp
 
-  # Local Network Gateway configuration
+  # Optional Local Network Gateway and Connection configuration
   local_network_gateway = var.vpn_configuration.local_network_gateway
-
-  # VPN Connection configuration
-  vpn_connection = var.vpn_configuration.vpn_connection
+  vpn_connection        = var.vpn_configuration.vpn_connection
 
   tags = merge(local.common_tags, {
     tier = "vpn"

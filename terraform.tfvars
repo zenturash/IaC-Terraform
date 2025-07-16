@@ -67,26 +67,31 @@ vnet_peering = {
 }
 
 # VPN Configuration (Controlled by deploy_components.vpn_gateway)
+# Updated for generalized azure-vpn module
 vpn_configuration = {
+  # VPN Gateway configuration (optional - has defaults)
   vpn_gateway_name = "vpn-gateway-test"
   vpn_gateway_sku  = "Basic"              # Cost-effective for testing
   vpn_type         = "RouteBased"
   enable_bgp       = false
   
+  # Local Network Gateway configuration (optional - null means gateway-only mode)
   local_network_gateway = {
-    name            = "local-gateway-test"
-    gateway_address = "203.0.113.12"           # Placeholder IP
-    address_space   = ["192.168.0.0/16"]       # Placeholder on-premises network
+    name            = "local-gateway-test"      # Optional - will auto-generate if null
+    gateway_address = "203.0.113.12"           # Required - Placeholder IP
+    address_space   = ["192.168.0.0/16"]       # Required - Placeholder on-premises network
   }
   
+  # VPN Connection configuration (optional - null means no connection)
   vpn_connection = {
-    name                = "vpn-connection-test"
-    shared_key          = "TestSharedKey123!"
-    connection_protocol = "IKEv2"
+    name                = "vpn-connection-test" # Optional - will auto-generate if null
+    shared_key          = "TestSharedKey123!"  # Required - Pre-shared key
+    connection_protocol = "IKEv2"              # Optional - defaults to IKEv2
   }
 }
 
 # Test Virtual Machines (Deployed in Spoke Subscription)
+# Updated for generalized azure-vm module
 virtual_machines = {
   "test-vm-01" = {
     vm_size             = "Standard_B2s"        # Standard VM size for testing
@@ -95,6 +100,12 @@ virtual_machines = {
     enable_public_ip    = true                  # Enable for easy testing access
     os_disk_type        = "Standard_LRS"        # Cost-effective storage for testing
     spoke_name          = "test-workload"       # Deploy to test-workload spoke
+    
+    # Optional: Override global admin credentials (if needed)
+    admin_username      = null                  # Use global admin_username
+    admin_password      = null                  # Use global admin_password
+    
+    # NSG rules (generalized module will create NSG only if rules are provided)
     nsg_rules = [
       {
         name                       = "AllowRDP"
@@ -116,6 +127,12 @@ virtual_machines = {
     enable_public_ip    = true                  # Enable for easy testing access
     os_disk_type        = "Standard_LRS"        # Cost-effective storage for testing
     spoke_name          = "test-workload"       # Deploy to test-workload spoke
+    
+    # Optional: Override global admin credentials (if needed)
+    admin_username      = null                  # Use global admin_username
+    admin_password      = null                  # Use global admin_password
+    
+    # NSG rules (generalized module will create NSG only if rules are provided)
     nsg_rules = [
       {
         name                       = "AllowRDP"

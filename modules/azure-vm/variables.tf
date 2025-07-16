@@ -462,45 +462,5 @@ variable "user_assigned_identity_ids" {
 # ============================================================================
 # CROSS-VARIABLE VALIDATION
 # ============================================================================
-
-# Ensure Windows VMs have required authentication
-variable "validate_windows_auth" {
-  description = "Internal validation variable - do not set manually"
-  type        = bool
-  default     = true
-  
-  validation {
-    condition = var.os_type == "Windows" ? var.admin_password != null : true
-    error_message = "Windows VMs require admin_password to be provided."
-  }
-}
-
-# Ensure Linux VMs have appropriate authentication
-variable "validate_linux_auth" {
-  description = "Internal validation variable - do not set manually"
-  type        = bool
-  default     = true
-  
-  validation {
-    condition = var.os_type == "Linux" ? (
-      var.ssh_public_key != null || (!var.disable_password_authentication && var.admin_password != null)
-    ) : true
-    error_message = "Linux VMs require either SSH public key or password authentication. If password authentication is disabled, SSH public key must be provided."
-  }
-}
-
-# Ensure Windows-specific settings are only used with Windows VMs
-variable "validate_windows_settings" {
-  description = "Internal validation variable - do not set manually"
-  type        = bool
-  default     = true
-  
-  validation {
-    condition = var.os_type == "Linux" ? (
-      var.hotpatching_enabled == false && 
-      var.enable_automatic_updates == true &&
-      var.timezone == "UTC"
-    ) : true
-    error_message = "Windows-specific settings (hotpatching, automatic updates, timezone) should use defaults for Linux VMs."
-  }
-}
+# Note: Cross-variable validation is handled in the main.tf locals and validation blocks
+# These validation variables are removed as they cannot reference other variables in OpenTofu/Terraform

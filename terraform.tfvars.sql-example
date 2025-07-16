@@ -1,0 +1,246 @@
+# SQL Server VM Example Configuration
+# This example shows how to deploy SQL Server 2022 VMs using the new azure-sql-vm module
+
+# Architecture Mode - Use existing ALZ hub-spoke setup
+architecture_mode = "hub-spoke"
+
+# Global settings
+admin_username = "azureuser"
+admin_password = "ComplexPassword123!"
+
+# Global Tags
+global_tags = {
+  environment     = "Test"
+  project         = "SQL Server VM Test"
+  creation_method = "OpenTofu"
+  owner           = "Zentura"
+  cost_center     = "1001"
+}
+
+# Multi-Subscription Configuration
+subscriptions = {
+  hub = "52bc998c-51a4-40fa-be04-26774b4c5f0e"
+  spoke = {
+    "database-workload" = "caaf1a53-3a0a-42e4-9688-4aac8f95a2d7"
+  }
+}
+
+# Component Deployment Control
+deploy_components = {
+  vpn_gateway = false   # Focus on SQL Server deployment
+  vms         = false   # Disable regular VMs
+  peering     = true    # Enable VNet peering
+}
+
+# Hub VNet Configuration
+hub_vnet = {
+  enabled             = true
+  name               = "vnet-hub-sql"
+  resource_group_name = "rg-hub-sql"
+  cidr               = "10.1.0.0/20"
+  location           = "West Europe"
+  subnets            = ["GatewaySubnet", "ManagementSubnet"]
+}
+
+# Spoke VNets Configuration
+spoke_vnets = {
+  "database-workload" = {
+    enabled             = true
+    name               = "vnet-spoke-db"
+    resource_group_name = "rg-spoke-db"
+    cidr               = "10.2.0.0/20"
+    location           = "West Europe"
+    subnets            = ["subnet-database", "subnet-app"]
+    peer_to_hub        = true
+    spoke_name          = "database-workload"
+  }
+}
+
+# VNet Peering Configuration
+vnet_peering = {
+  enabled             = true
+  use_remote_gateways = false
+}
+
+# SQL Server VMs Configuration using the new azure-sql-vm module
+sql_server_vms = {
+  "sql-prod-01" = {
+    # Required variables only
+    subnet_name         = "subnet-database"
+    resource_group_name = "rg-sql-prod"
+    admin_username      = "sqladmin"
+    admin_password      = "SecureSQLPassword123!"
+    
+    # Optional: SQL Server specific configuration
+    vm_size        = "Standard_E8s_v3"  # 8 vCPU, 64GB RAM for production
+    sql_edition    = "Standard"
+    spoke_name     = "database-workload"
+    
+    # Custom storage configuration
+    data_disk_config = {
+      size_gb              = 500
+      storage_account_type = "Premium_LRS"
+      caching              = "ReadOnly"
+      lun                  = 0
+    }
+    
+    log_disk_config = {
+      size_gb              = 100
+      storage_account_type = "Premium_LRS"
+      caching              = "None"
+      lun                  = 1
+    }
+    
+    # Security configuration (explicit NSG rules)
+    create_nsg = true
+    sql_nsg_rules = [
+      {
+        name                       = "AllowSQLFromApp"
+        priority                   = 1000
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "1433"
+        source_address_prefix      = "10.2.1.0/24"  # App subnet
+        destination_address_prefix = "*"
+      },
+      {
+        name                       = "AllowRDPFromMgmt"
+        priority                   = 1010
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "3389"
+        source_address_prefix      = "10.1.0.0/24"  # Management subnet in hub
+        destination_address_prefix = "*"
+      }
+    ]
+    
+    tags = {
+      application = "ERP Database"
+      tier        = "Database"
+      backup      = "Required"
+    }
+  }
+  
+  "sql-dev-01" = {
+    # Minimal configuration for development
+    subnet_name         = "subnet-database"
+    resource_group_name = "rg-sql-dev"
+    admin_username      = "sqladmin"
+    admin_password      = "DevSQLPassword123!"
+    
+    # Development-specific overrides
+    vm_size     = "Standard_D4s_v3"  # Smaller for dev
+    sql_edition = "Express"          # Free for development
+    spoke_name  = "database-workload"
+    
+    # Smaller, cost-effective storage
+    data_disk_config = {
+      size_gb              = 100
+      storage_account_type = "StandardSSD_LRS"
+      caching              = "ReadOnly"
+      lun                  = 0
+    }
+    
+    log_disk_config = {
+      size_gb              = 50
+      storage_account_type = "StandardSSD_LRS"
+      caching              = "None"
+      lun                  = 1
+    }
+    
+    # Public IP for easy development access
+    enable_public_ip = true
+    create_nsg = true
+    sql_nsg_rules = [
+      {
+        name                       = "AllowRDPFromDev"
+        priority                   = 1000
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "3389"
+        source_address_prefix      = "*"  # Change to your IP for security
+        destination_address_prefix = "*"
+      }
+    ]
+    
+    tags = {
+      application = "Development Database"
+      tier        = "Development"
+      backup      = "Not Required"
+    }
+  }
+}
+
+# ========================================
+# USAGE INSTRUCTIONS
+# ========================================
+#
+# 1. COPY THIS CONFIGURATION:
+#    cp terraform.tfvars.sql-example terraform.tfvars
+#
+# 2. UPDATE MAIN.TF:
+#    Add the SQL Server VM module calls to main.tf (see example below)
+#
+# 3. DEPLOY:
+#    tofu init
+#    tofu plan
+#    tofu apply
+#
+# 4. CONNECT TO SQL SERVER:
+#    Use the outputs to get RDP and SQL connection strings
+#
+# ========================================
+# MAIN.TF ADDITION EXAMPLE
+# ========================================
+#
+# Add this to your main.tf file:
+#
+# # SQL Server VMs (Hub-Spoke mode)
+# module "sql_vms" {
+#   for_each = var.architecture_mode == "hub-spoke" ? var.sql_server_vms : {}
+#   source = "./modules/azure-sql-vm"
+#
+#   # Required variables
+#   subnet_id           = module.spoke_networking[each.value.spoke_name].subnet_ids[each.value.subnet_name]
+#   resource_group_name = each.value.resource_group_name
+#   admin_username      = each.value.admin_username
+#   admin_password      = each.value.admin_password
+#
+#   # Optional variables with defaults
+#   vm_name             = each.key
+#   vm_size             = each.value.vm_size
+#   sql_edition         = each.value.sql_edition
+#   enable_public_ip    = lookup(each.value, "enable_public_ip", false)
+#   
+#   # Storage configuration
+#   data_disk_config = each.value.data_disk_config
+#   log_disk_config  = each.value.log_disk_config
+#   
+#   # Security configuration
+#   create_nsg    = lookup(each.value, "create_nsg", false)
+#   sql_nsg_rules = lookup(each.value, "sql_nsg_rules", [])
+#   
+#   # Tags
+#   tags = merge(local.common_tags, lookup(each.value, "tags", {}))
+#
+#   depends_on = [module.spoke_networking]
+# }
+#
+# ========================================
+# EXPECTED OUTPUTS
+# ========================================
+#
+# After deployment, you'll get:
+# - RDP connection strings for each SQL Server VM
+# - SQL Server connection strings
+# - Disk configuration details
+# - Post-deployment setup instructions
+# - Complete connection guide with security notes
+#
+# ========================================

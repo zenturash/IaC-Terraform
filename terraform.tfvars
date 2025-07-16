@@ -58,12 +58,14 @@ spoke_vnets = {
 }
 
 # VNet Peering Configuration - Cross-Subscription
+# Most settings use ALZ-optimized defaults from the module, only override what's needed
 vnet_peering = {
-  enabled                    = true
-  allow_virtual_network_access = true
-  allow_forwarded_traffic    = true
-  allow_gateway_transit      = true   # Hub can provide gateway services
-  use_remote_gateways        = false  # Spoke doesn't use remote gateways (no VPN deployed yet)
+  enabled             = true
+  use_remote_gateways = false  # Override default: Spoke doesn't use remote gateways (no VPN deployed yet)
+  # Other settings use module defaults:
+  # allow_virtual_network_access = true (default)
+  # allow_forwarded_traffic = true (default) 
+  # allow_gateway_transit = true (default)
 }
 
 # VPN Configuration (Controlled by deploy_components.vpn_gateway)

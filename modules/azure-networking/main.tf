@@ -110,10 +110,7 @@ resource "azurerm_subnet" "subnets" {
   # Service endpoint policies
   service_endpoint_policy_ids = lookup(var.subnet_service_endpoint_policies, each.key, [])
 
-  # Private endpoint network policies (updated for AzureRM provider v4.0 compatibility)
-  private_endpoint_network_policies = lookup(var.subnet_private_endpoint_network_policies_enabled, each.key, true) ? "Enabled" : "Disabled"
-
-  # Private link service network policies (updated for AzureRM provider v4.0 compatibility)
+  # Private link service network policies (azurerm v3.x compatible)
   private_link_service_network_policies_enabled = lookup(var.subnet_private_link_service_network_policies_enabled, each.key, true)
 
   # Subnet delegation

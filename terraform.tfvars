@@ -216,9 +216,9 @@ backup_configuration = {
   policies = {
     vm_daily       = true   # Enable VM daily backup policy for testing
     vm_enhanced    = false  # Disable enhanced hourly VM backups (can be enabled later)
-    files_daily    = false  # Disable Azure Files backup for testing
-    blob_daily     = false  # Disable Blob backup for testing
-    sql_hourly_log = false  # Disable SQL Server backup for testing
+    files_daily    = true   # Enable Azure Files backup for testing
+    blob_daily     = true   # Enable Blob backup for testing (Backup Vault policy)
+    sql_hourly_log = true   # Enable SQL Server backup for testing
   }
   
   # VM backup configuration (ARM template defaults)

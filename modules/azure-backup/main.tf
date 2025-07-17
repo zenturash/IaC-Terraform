@@ -108,18 +108,17 @@ resource "azurerm_recovery_services_vault" "main" {
 # ============================================================================
 
 # Blob Daily Backup Policy (30-day retention)
-# NOTE: Temporarily disabled due to deprecation warnings in azurerm provider v3.x
-# Will be re-enabled when azurerm v4.0 is released with the new property name
-# resource "azurerm_data_protection_backup_policy_blob_storage" "blob_daily" {
-#   count    = var.create_backup_policies.blob_daily ? 1 : 0
-#   name     = "Blob-Daily${var.blob_backup_retention_days}"
-#   vault_id = azurerm_data_protection_backup_vault.main.id
-#   
-#   # Retention configuration from ARM template
-#   retention_duration = "P${var.blob_backup_retention_days}D"
-#   
-#   depends_on = [azurerm_data_protection_backup_vault.main]
-# }
+# NOTE: Re-enabled for testing - may show deprecation warnings but should work
+resource "azurerm_data_protection_backup_policy_blob_storage" "blob_daily" {
+  count    = var.create_backup_policies.blob_daily ? 1 : 0
+  name     = "Blob-Daily${var.blob_backup_retention_days}"
+  vault_id = azurerm_data_protection_backup_vault.main.id
+  
+  # Retention configuration from ARM template
+  retention_duration = "P${var.blob_backup_retention_days}D"
+  
+  depends_on = [azurerm_data_protection_backup_vault.main]
+}
 
 # ============================================================================
 # RECOVERY SERVICES VAULT BACKUP POLICIES

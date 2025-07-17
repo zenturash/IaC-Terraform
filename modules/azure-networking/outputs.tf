@@ -95,12 +95,12 @@ output "subnets" {
 
 output "gateway_subnet_id" {
   description = "ID of the GatewaySubnet (if created)"
-  value       = var.create_gateway_subnet ? azurerm_subnet.subnets["GatewaySubnet"].id : null
+  value       = var.create_gateway_subnet && contains(keys(azurerm_subnet.subnets), "GatewaySubnet") ? azurerm_subnet.subnets["GatewaySubnet"].id : null
 }
 
 output "gateway_subnet_address_prefix" {
   description = "Address prefix of the GatewaySubnet (if created)"
-  value       = var.create_gateway_subnet ? azurerm_subnet.subnets["GatewaySubnet"].address_prefixes[0] : null
+  value       = var.create_gateway_subnet && contains(keys(azurerm_subnet.subnets), "GatewaySubnet") ? azurerm_subnet.subnets["GatewaySubnet"].address_prefixes[0] : null
 }
 
 # ============================================================================

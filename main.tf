@@ -62,11 +62,11 @@ locals {
   
   # Determine which VNet to use for VPN based on architecture mode
   vpn_vnet_info = var.architecture_mode == "hub-spoke" ? {
-    resource_group_name = module.hub_networking[0].networking_resource_group_name
-    gateway_subnet_id   = module.hub_networking[0].subnet_ids["GatewaySubnet"]
+    resource_group_name = length(module.hub_networking) > 0 ? module.hub_networking[0].networking_resource_group_name : ""
+    gateway_subnet_id   = length(module.hub_networking) > 0 && contains(keys(module.hub_networking[0].subnet_ids), "GatewaySubnet") ? module.hub_networking[0].subnet_ids["GatewaySubnet"] : null
   } : {
-    resource_group_name = module.single_networking[0].networking_resource_group_name
-    gateway_subnet_id   = module.single_networking[0].subnet_ids["GatewaySubnet"]
+    resource_group_name = length(module.single_networking) > 0 ? module.single_networking[0].networking_resource_group_name : ""
+    gateway_subnet_id   = length(module.single_networking) > 0 && contains(keys(module.single_networking[0].subnet_ids), "GatewaySubnet") ? module.single_networking[0].subnet_ids["GatewaySubnet"] : null
   }
 }
 
@@ -227,7 +227,7 @@ module "vms_spoke" {
   # Required variables (generalized module)
   subnet_id = each.value.spoke_name != null ? (
     # If spoke_name is specified, look for subnet in that specific spoke
-    contains(keys(module.spoke_networking), each.value.spoke_name) ? 
+    contains(keys(module.spoke_networking), each.value.spoke_name) && contains(keys(module.spoke_networking[each.value.spoke_name].subnet_ids), each.value.subnet_name) ? 
       module.spoke_networking[each.value.spoke_name].subnet_ids[each.value.subnet_name] :
       # Fallback to hub if spoke not found and subnet exists in hub
       (length(module.hub_networking) > 0 && contains(keys(module.hub_networking[0].subnet_ids), each.value.subnet_name) ?
@@ -236,8 +236,10 @@ module "vms_spoke" {
       )
   ) : (
     # If no spoke_name specified, use backward compatibility logic
-    length(module.spoke_networking) > 0 ? values(module.spoke_networking)[0].subnet_ids[each.value.subnet_name] :
-    (length(module.hub_networking) > 0 ? module.hub_networking[0].subnet_ids[each.value.subnet_name] : null)
+    length(module.spoke_networking) > 0 && length(values(module.spoke_networking)[0].subnet_ids) > 0 && contains(keys(values(module.spoke_networking)[0].subnet_ids), each.value.subnet_name) ? 
+      values(module.spoke_networking)[0].subnet_ids[each.value.subnet_name] :
+    (length(module.hub_networking) > 0 && contains(keys(module.hub_networking[0].subnet_ids), each.value.subnet_name) ? 
+      module.hub_networking[0].subnet_ids[each.value.subnet_name] : null)
   )
   admin_username      = each.value.admin_username != null ? each.value.admin_username : var.admin_username
   resource_group_name = each.value.resource_group_name
@@ -494,7 +496,7 @@ module "sql_vms_spoke" {
   # Required variables with subnet resolution logic
   subnet_id = each.value.spoke_name != null ? (
     # If spoke_name is specified, look for subnet in that specific spoke
-    contains(keys(module.spoke_networking), each.value.spoke_name) ? 
+    contains(keys(module.spoke_networking), each.value.spoke_name) && contains(keys(module.spoke_networking[each.value.spoke_name].subnet_ids), each.value.subnet_name) ? 
       module.spoke_networking[each.value.spoke_name].subnet_ids[each.value.subnet_name] :
       # Fallback to hub if spoke not found and subnet exists in hub
       (length(module.hub_networking) > 0 && contains(keys(module.hub_networking[0].subnet_ids), each.value.subnet_name) ?
@@ -503,8 +505,10 @@ module "sql_vms_spoke" {
       )
   ) : (
     # If no spoke_name specified, use backward compatibility logic
-    length(module.spoke_networking) > 0 ? values(module.spoke_networking)[0].subnet_ids[each.value.subnet_name] :
-    (length(module.hub_networking) > 0 ? module.hub_networking[0].subnet_ids[each.value.subnet_name] : null)
+    length(module.spoke_networking) > 0 && length(values(module.spoke_networking)[0].subnet_ids) > 0 && contains(keys(values(module.spoke_networking)[0].subnet_ids), each.value.subnet_name) ? 
+      values(module.spoke_networking)[0].subnet_ids[each.value.subnet_name] :
+    (length(module.hub_networking) > 0 && contains(keys(module.hub_networking[0].subnet_ids), each.value.subnet_name) ? 
+      module.hub_networking[0].subnet_ids[each.value.subnet_name] : null)
   )
   resource_group_name = each.value.resource_group_name
   admin_username      = each.value.admin_username

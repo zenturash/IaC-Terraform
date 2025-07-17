@@ -7,8 +7,8 @@ variable "subnet_id" {
   type        = string
   
   validation {
-    condition     = length(var.subnet_id) > 0
-    error_message = "Subnet ID cannot be empty."
+    condition     = var.subnet_id == null || length(var.subnet_id) > 0
+    error_message = "Subnet ID cannot be empty when provided."
   }
 }
 

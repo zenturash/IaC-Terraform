@@ -28,9 +28,10 @@ subscriptions = {
 
 # Component Deployment Control - Test Configuration
 deploy_components = {
-  vpn_gateway = false   # Disable VPN for initial test (can enable later)
-  vms         = true    # Deploy test VM in spoke
-  peering     = true    # Enable cross-subscription VNet peering
+  vpn_gateway     = false   # Disable VPN for initial test (can enable later)
+  vms             = true    # Deploy test VM in spoke
+  peering         = true    # Enable cross-subscription VNet peering
+  backup_services = true    # Enable backup services for testing
 }
 
 # Hub VNet Configuration (Deployed in Hub Subscription)
@@ -206,6 +207,45 @@ sql_server_vms = {
   }
 }
 
+# Backup Services Configuration (Test Backup Module)
+backup_configuration = {
+  # Required configuration
+  resource_group_name = "rg-backup-test"
+  
+  # Backup policies configuration (security-first: opt-in for testing)
+  policies = {
+    vm_daily       = true   # Enable VM daily backup policy for testing
+    vm_enhanced    = false  # Disable enhanced hourly VM backups (can be enabled later)
+    files_daily    = false  # Disable Azure Files backup for testing
+    blob_daily     = false  # Disable Blob backup for testing
+    sql_hourly_log = false  # Disable SQL Server backup for testing
+  }
+  
+  # VM backup configuration (ARM template defaults)
+  vm_backup_time           = "02:00"                    # 2 AM UTC backup time for testing
+  vm_backup_retention_days = 7                         # 7-day retention for cost-effective testing
+  vm_backup_timezone       = "Romance Standard Time"   # Central European Time (ARM default)
+  
+  # Files backup configuration (ARM template defaults)
+  files_backup_time           = "02:30"                # 2:30 AM UTC backup time
+  files_backup_retention_days = 7                      # 7-day retention for testing
+  
+  # Blob backup configuration (ARM template defaults)
+  blob_backup_retention_days = 7                       # 7-day retention for testing
+  
+  # SQL backup configuration (ARM template defaults)
+  sql_full_backup_time           = "03:00"             # 3 AM UTC full backups
+  sql_full_backup_retention_days = 7                   # 7-day retention for testing
+  sql_log_backup_frequency_minutes = 60                # Hourly log backups (ARM default)
+  sql_log_backup_retention_days  = 7                   # 7-day log retention for testing
+  
+  # Alert configuration (ARM template defaults)
+  enable_backup_alerts = true                          # Enable backup alerts for testing
+  alert_send_to_owners = "DoNotSend"                   # Don't send to owners (ARM default)
+  alert_custom_email_addresses = [                     # Test email addresses
+    "backup-test@zentura.com"
+  ]
+}
 
 # ========================================
 # TESTING INSTRUCTIONS

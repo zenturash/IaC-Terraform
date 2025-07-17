@@ -1,0 +1,250 @@
+# Azure Backup Services Module - Example Configuration
+# This configuration demonstrates various usage patterns for the backup module
+
+# ========================================
+# MINIMAL CONFIGURATION EXAMPLE
+# ========================================
+# Uncomment this section for minimal deployment (only required variables)
+
+# module "backup_minimal" {
+#   source = "./modules/azure-backup"
+#   
+#   resource_group_name = "rg-backup-minimal"
+# }
+
+# ========================================
+# PRODUCTION BACKUP CONFIGURATION
+# ========================================
+
+# Global settings
+location = "West Europe"
+
+# Resource group configuration
+resource_group_name  = "rg-backup-production"
+create_resource_group = true
+
+# Custom vault names (optional - will auto-generate if not specified)
+backup_vault_name   = "bv-prod-westeu-001"
+recovery_vault_name = "rsv-prod-westeu-001"
+
+# ========================================
+# BACKUP POLICIES CONFIGURATION
+# Security-first approach: All policies are opt-in
+# ========================================
+
+create_backup_policies = {
+  vm_daily       = true   # Enable VM daily backup policy
+  vm_enhanced    = false  # Disable enhanced hourly VM backups (can be enabled later)
+  files_daily    = true   # Enable Azure Files daily backup policy
+  blob_daily     = true   # Enable Blob storage daily backup policy
+  sql_hourly_log = false  # Disable SQL Server backup (enable if needed)
+}
+
+# ========================================
+# VM BACKUP POLICY CONFIGURATION
+# ========================================
+
+# Standard VM backup settings (ARM template defaults)
+vm_backup_time           = "01:00"                    # 1 AM UTC backup time
+vm_backup_retention_days = 30                        # 30-day retention (ARM default)
+vm_backup_timezone       = "Romance Standard Time"   # Central European Time (ARM default)
+vm_instant_rp_retention_days = 2                     # 2-day instant recovery (ARM default)
+
+# Enhanced VM backup settings (if vm_enhanced is enabled)
+vm_enhanced_backup_interval_hours  = 4               # Every 4 hours (ARM default)
+vm_enhanced_backup_window_start    = "08:00"         # 8 AM start time (ARM default)
+vm_enhanced_backup_window_duration = 12              # 12-hour backup window (ARM default)
+
+# ========================================
+# AZURE FILES BACKUP CONFIGURATION
+# ========================================
+
+files_backup_time           = "01:00"                # 1 AM UTC backup time (ARM default)
+files_backup_retention_days = 30                     # 30-day retention (ARM default)
+files_backup_timezone       = "Romance Standard Time" # Central European Time (ARM default)
+
+# ========================================
+# BLOB BACKUP CONFIGURATION
+# ========================================
+
+blob_backup_retention_days = 30                      # 30-day retention (ARM default)
+
+# ========================================
+# SQL SERVER BACKUP CONFIGURATION
+# (Only used if sql_hourly_log is enabled)
+# ========================================
+
+sql_full_backup_time           = "18:00"             # 6 PM UTC full backups (ARM default)
+sql_full_backup_retention_days = 30                  # 30-day retention (ARM default)
+sql_log_backup_frequency_minutes = 60                # Hourly log backups (ARM default)
+sql_log_backup_retention_days  = 30                  # 30-day log retention (ARM default)
+sql_backup_compression         = false               # Compression disabled (ARM default)
+
+# ========================================
+# VAULT CONFIGURATION (ARM Template Defaults)
+# ========================================
+
+# Backup Vault settings (modern backup services)
+backup_vault_storage_redundancy        = "GeoRedundant"  # ARM default
+backup_vault_soft_delete_state         = "On"            # ARM default
+backup_vault_soft_delete_retention_days = 14             # ARM default
+backup_vault_replicated_regions        = ["northeurope"] # ARM default
+
+# Recovery Services Vault settings (traditional backup services)
+recovery_vault_sku_name                    = "RS0"           # ARM default
+recovery_vault_sku_tier                    = "Standard"      # ARM default
+recovery_vault_soft_delete_enabled         = true           # ARM default
+recovery_vault_soft_delete_retention_days  = 14             # ARM default
+recovery_vault_enhanced_security_state     = "Enabled"      # ARM default
+recovery_vault_storage_redundancy          = "GeoRedundant" # ARM default
+recovery_vault_cross_region_restore        = false          # ARM default
+recovery_vault_public_network_access       = "Enabled"      # ARM default
+recovery_vault_cross_subscription_restore  = true           # ARM default
+
+# ========================================
+# ALERT CONFIGURATION
+# ========================================
+
+enable_backup_alerts = true                          # Enable backup alerts (ARM default)
+alert_send_to_owners = "DoNotSend"                   # Don't send to owners (ARM default)
+alert_custom_email_addresses = [                     # Custom email addresses
+  "backup-admin@company.com",
+  "it-team@company.com"
+]
+
+# ========================================
+# RESOURCE NAMING CONFIGURATION
+# ========================================
+
+resource_name_prefix = "backup"                      # Prefix for auto-generated names
+use_random_suffix   = false                          # Don't use random suffix (clean names)
+
+# ========================================
+# IDENTITY CONFIGURATION
+# ========================================
+
+backup_vault_identity_type   = "SystemAssigned"      # ARM default
+recovery_vault_identity_type = "SystemAssigned"      # ARM default
+# user_assigned_identity_ids = []                    # Optional user-assigned identities
+
+# ========================================
+# TAGGING CONFIGURATION
+# ========================================
+
+enable_auto_tagging = true                           # Enable comprehensive auto-tagging
+
+# Custom tags (merged with auto-generated tags)
+tags = {
+  environment     = "production"
+  project         = "backup-infrastructure"
+  cost_center     = "IT-001"
+  owner           = "backup-team@company.com"
+  criticality     = "high"
+  backup_tier     = "enterprise"
+  compliance      = "required"
+  data_classification = "confidential"
+}
+
+# ========================================
+# ALTERNATIVE CONFIGURATIONS
+# ========================================
+
+# Uncomment sections below for different deployment scenarios:
+
+# ----------------------------------------
+# HIGH-FREQUENCY BACKUP CONFIGURATION
+# ----------------------------------------
+# For critical workloads requiring frequent backups
+
+# create_backup_policies = {
+#   vm_enhanced    = true   # Enable hourly VM backups
+#   sql_hourly_log = true   # Enable SQL log backups
+# }
+# 
+# vm_enhanced_backup_interval_hours = 2    # Every 2 hours
+# sql_log_backup_frequency_minutes = 15    # Every 15 minutes
+
+# ----------------------------------------
+# COST-OPTIMIZED CONFIGURATION
+# ----------------------------------------
+# For development/testing environments
+
+# backup_vault_storage_redundancy   = "LocallyRedundant"
+# recovery_vault_storage_redundancy = "LocallyRedundant"
+# vm_backup_retention_days          = 7
+# files_backup_retention_days       = 7
+# blob_backup_retention_days         = 7
+
+# ----------------------------------------
+# SECURITY-FOCUSED CONFIGURATION
+# ----------------------------------------
+# For highly secure environments
+
+# recovery_vault_public_network_access = "Disabled"
+# backup_vault_soft_delete_retention_days = 90
+# recovery_vault_soft_delete_retention_days = 90
+# 
+# tags = {
+#   security_classification = "top-secret"
+#   data_classification     = "highly-sensitive"
+#   compliance_framework    = "iso27001"
+# }
+
+# ========================================
+# DEPLOYMENT INSTRUCTIONS
+# ========================================
+#
+# 1. AUTHENTICATION:
+#    Ensure you're authenticated to Azure:
+#    az login
+#    az account set --subscription "your-subscription-id"
+#
+# 2. CUSTOMIZE CONFIGURATION:
+#    - Update resource_group_name for your environment
+#    - Modify backup policies based on your requirements
+#    - Adjust retention periods as needed
+#    - Configure alert email addresses
+#    - Update tags for your organization
+#
+# 3. DEPLOY:
+#    tofu init
+#    tofu plan    # Review what will be deployed
+#    tofu apply   # Deploy the backup infrastructure
+#
+# 4. VALIDATE:
+#    - Check both vaults are created in Azure portal
+#    - Verify backup policies are configured correctly
+#    - Test alert notifications
+#    - Review managed identity assignments
+#
+# 5. CONFIGURE BACKUP ITEMS:
+#    After deployment, configure actual resources to use the backup policies:
+#    - VMs: Assign to VM backup policies
+#    - Storage Accounts: Configure blob backup
+#    - File Shares: Assign to file backup policies
+#    - SQL Servers: Configure SQL backup policies
+#
+# ========================================
+# COST ESTIMATION (West Europe)
+# ========================================
+# 
+# Base Infrastructure (Monthly):
+# - Backup Vault: Free (pay per protected instance)
+# - Recovery Services Vault: Free (pay per protected instance)
+# - Storage (GeoRedundant): ~$0.05/GB/month
+# 
+# Per Protected Instance:
+# - VM Backup: ~$5-20/month per VM (depends on size)
+# - File Share Backup: ~$0.10/GB/month
+# - Blob Backup: ~$0.05/GB/month
+# - SQL Backup: ~$10-50/month per database
+# 
+# Total estimated cost depends on:
+# - Number of protected instances
+# - Amount of data backed up
+# - Retention periods
+# - Storage redundancy settings
+# 
+# Use Azure Pricing Calculator for accurate estimates:
+# https://azure.microsoft.com/en-us/pricing/calculator/
+# ========================================

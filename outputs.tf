@@ -219,6 +219,54 @@ output "sql_connection_guide" {
   )
 }
 
+# Backup Services Information
+output "backup_services" {
+  description = "Information about backup services (if backup services are enabled)"
+  value = var.deploy_components.backup_services ? (
+    var.architecture_mode == "single-vnet" && length(module.backup_services_single) > 0 ? {
+      backup_vault_id         = module.backup_services_single[0].backup_vault_id
+      backup_vault_name       = module.backup_services_single[0].backup_vault_name
+      recovery_vault_id       = module.backup_services_single[0].recovery_vault_id
+      recovery_vault_name     = module.backup_services_single[0].recovery_vault_name
+      resource_group_name     = module.backup_services_single[0].resource_group_name
+      backup_vault_identity   = module.backup_services_single[0].backup_vault_identity
+      recovery_vault_identity = module.backup_services_single[0].recovery_vault_identity
+      backup_policies         = module.backup_services_single[0].backup_policies
+      backup_policy_ids       = module.backup_services_single[0].backup_policy_ids
+      backup_summary          = module.backup_services_single[0].backup_summary
+      architecture           = var.architecture_mode
+    } : var.architecture_mode == "hub-spoke" && length(module.backup_services_hub) > 0 ? {
+      backup_vault_id         = module.backup_services_hub[0].backup_vault_id
+      backup_vault_name       = module.backup_services_hub[0].backup_vault_name
+      recovery_vault_id       = module.backup_services_hub[0].recovery_vault_id
+      recovery_vault_name     = module.backup_services_hub[0].recovery_vault_name
+      resource_group_name     = module.backup_services_hub[0].resource_group_name
+      backup_vault_identity   = module.backup_services_hub[0].backup_vault_identity
+      recovery_vault_identity = module.backup_services_hub[0].recovery_vault_identity
+      backup_policies         = module.backup_services_hub[0].backup_policies
+      backup_policy_ids       = module.backup_services_hub[0].backup_policy_ids
+      backup_summary          = module.backup_services_hub[0].backup_summary
+      architecture           = var.architecture_mode
+    } : null
+  ) : null
+}
+
+output "backup_vault_references" {
+  description = "Backup vault references for use in other configurations"
+  value = var.deploy_components.backup_services ? (
+    var.architecture_mode == "single-vnet" && length(module.backup_services_single) > 0 ? module.backup_services_single[0].vault_references :
+    var.architecture_mode == "hub-spoke" && length(module.backup_services_hub) > 0 ? module.backup_services_hub[0].vault_references : null
+  ) : null
+}
+
+output "backup_usage_guide" {
+  description = "Quick guide for using the backup services"
+  value = var.deploy_components.backup_services ? (
+    var.architecture_mode == "single-vnet" && length(module.backup_services_single) > 0 ? module.backup_services_single[0].usage_guide :
+    var.architecture_mode == "hub-spoke" && length(module.backup_services_hub) > 0 ? module.backup_services_hub[0].usage_guide : null
+  ) : null
+}
+
 # VPN Information (conditional)
 output "vpn_gateway_info" {
   description = "VPN Gateway information (if VPN is enabled)"
@@ -267,9 +315,10 @@ output "deployment_summary" {
     
     # Component deployment status
     components_deployed = {
-      vpn_gateway = var.deploy_components.vpn_gateway
-      vms         = var.deploy_components.vms
-      peering     = var.deploy_components.peering && var.architecture_mode == "hub-spoke"
+      vpn_gateway     = var.deploy_components.vpn_gateway
+      vms             = var.deploy_components.vms
+      peering         = var.deploy_components.peering && var.architecture_mode == "hub-spoke"
+      backup_services = var.deploy_components.backup_services
     }
     
     # Network information

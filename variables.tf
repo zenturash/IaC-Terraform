@@ -180,14 +180,16 @@ variable "spoke_vnets" {
 variable "deploy_components" {
   description = "Control which components to deploy"
   type = object({
-    vpn_gateway = bool
-    vms         = bool
-    peering     = bool
+    vpn_gateway     = bool
+    vms             = bool
+    peering         = bool
+    backup_services = bool
   })
   default = {
-    vpn_gateway = false
-    vms         = true
-    peering     = false
+    vpn_gateway     = false
+    vms             = true
+    peering         = false
+    backup_services = false
   }
 }
 
@@ -285,5 +287,96 @@ variable "sql_server_vms" {
       for vm in var.sql_server_vms : contains(["Express", "Standard", "Enterprise"], vm.sql_edition != null ? vm.sql_edition : "Standard")
     ])
     error_message = "SQL Server edition must be one of: Express, Standard, Enterprise."
+  }
+}
+
+# Backup Services Configuration
+variable "backup_configuration" {
+  description = "Azure Backup Services configuration"
+  type = object({
+    # Required configuration
+    resource_group_name = string
+    
+    # Backup policies configuration (security-first: opt-in)
+    policies = object({
+      vm_daily       = optional(bool, false)
+      vm_enhanced    = optional(bool, false)
+      files_daily    = optional(bool, false)
+      blob_daily     = optional(bool, false)
+      sql_hourly_log = optional(bool, false)
+    })
+    
+    # VM backup configuration (ARM template defaults)
+    vm_backup_time           = optional(string, "01:00")
+    vm_backup_retention_days = optional(number, 30)
+    vm_backup_timezone       = optional(string, "Romance Standard Time")
+    
+    # Files backup configuration (ARM template defaults)
+    files_backup_time           = optional(string, "01:00")
+    files_backup_retention_days = optional(number, 30)
+    
+    # Blob backup configuration (ARM template defaults)
+    blob_backup_retention_days = optional(number, 30)
+    
+    # SQL backup configuration (ARM template defaults)
+    sql_full_backup_time           = optional(string, "18:00")
+    sql_full_backup_retention_days = optional(number, 30)
+    sql_log_backup_frequency_minutes = optional(number, 60)
+    sql_log_backup_retention_days  = optional(number, 30)
+    
+    # Alert configuration (ARM template defaults)
+    enable_backup_alerts = optional(bool, true)
+    alert_send_to_owners = optional(string, "DoNotSend")
+    alert_custom_email_addresses = optional(list(string), [])
+  })
+  default = {
+    resource_group_name = "rg-backup-services"
+    policies = {
+      vm_daily       = false
+      vm_enhanced    = false
+      files_daily    = false
+      blob_daily     = false
+      sql_hourly_log = false
+    }
+    vm_backup_time           = "01:00"
+    vm_backup_retention_days = 30
+    vm_backup_timezone       = "Romance Standard Time"
+    files_backup_time           = "01:00"
+    files_backup_retention_days = 30
+    blob_backup_retention_days = 30
+    sql_full_backup_time           = "18:00"
+    sql_full_backup_retention_days = 30
+    sql_log_backup_frequency_minutes = 60
+    sql_log_backup_retention_days  = 30
+    enable_backup_alerts = true
+    alert_send_to_owners = "DoNotSend"
+    alert_custom_email_addresses = []
+  }
+  
+  validation {
+    condition     = can(regex("^([0-1][0-9]|2[0-3]):[0-5][0-9]$", var.backup_configuration.vm_backup_time))
+    error_message = "VM backup time must be in HH:MM format (24-hour)."
+  }
+  
+  validation {
+    condition     = can(regex("^([0-1][0-9]|2[0-3]):[0-5][0-9]$", var.backup_configuration.files_backup_time))
+    error_message = "Files backup time must be in HH:MM format (24-hour)."
+  }
+  
+  validation {
+    condition     = can(regex("^([0-1][0-9]|2[0-3]):[0-5][0-9]$", var.backup_configuration.sql_full_backup_time))
+    error_message = "SQL full backup time must be in HH:MM format (24-hour)."
+  }
+  
+  validation {
+    condition     = contains(["Send", "DoNotSend"], var.backup_configuration.alert_send_to_owners)
+    error_message = "Alert send to owners must be either 'Send' or 'DoNotSend'."
+  }
+  
+  validation {
+    condition = alltrue([
+      for email in var.backup_configuration.alert_custom_email_addresses : can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+    ])
+    error_message = "All email addresses must be valid."
   }
 }

@@ -329,6 +329,112 @@ module "vpn_hub" {
 }
 
 # ============================================================================
+# BACKUP SERVICES
+# ============================================================================
+
+# Backup Services (Single VNet mode)
+module "backup_services_single" {
+  count  = var.architecture_mode == "single-vnet" && var.deploy_components.backup_services ? 1 : 0
+  source = "./modules/azure-backup"
+
+  # Required variables (generalized module)
+  resource_group_name = var.backup_configuration.resource_group_name
+
+  # Optional configuration with smart defaults
+  location = var.location
+  
+  # Backup policies configuration (security-first: opt-in)
+  create_backup_policies = var.backup_configuration.policies
+  
+  # VM backup configuration
+  vm_backup_time           = var.backup_configuration.vm_backup_time
+  vm_backup_retention_days = var.backup_configuration.vm_backup_retention_days
+  vm_backup_timezone       = var.backup_configuration.vm_backup_timezone
+  
+  # Files backup configuration
+  files_backup_time           = var.backup_configuration.files_backup_time
+  files_backup_retention_days = var.backup_configuration.files_backup_retention_days
+  
+  # Blob backup configuration
+  blob_backup_retention_days = var.backup_configuration.blob_backup_retention_days
+  
+  # SQL backup configuration
+  sql_full_backup_time           = var.backup_configuration.sql_full_backup_time
+  sql_full_backup_retention_days = var.backup_configuration.sql_full_backup_retention_days
+  sql_log_backup_frequency_minutes = var.backup_configuration.sql_log_backup_frequency_minutes
+  sql_log_backup_retention_days  = var.backup_configuration.sql_log_backup_retention_days
+  
+  # Alert configuration
+  enable_backup_alerts = var.backup_configuration.enable_backup_alerts
+  alert_send_to_owners = var.backup_configuration.alert_send_to_owners
+  alert_custom_email_addresses = var.backup_configuration.alert_custom_email_addresses
+  
+  # Tags configuration
+  tags = merge(local.common_tags, {
+    tier = "backup"
+    architecture = var.architecture_mode
+  })
+
+  # Backup services deployed after networking
+  depends_on = [
+    module.single_networking
+  ]
+}
+
+# Backup Services (Hub-Spoke mode - deployed in hub subscription)
+module "backup_services_hub" {
+  count  = var.architecture_mode == "hub-spoke" && var.deploy_components.backup_services ? 1 : 0
+  source = "./modules/azure-backup"
+
+  providers = {
+    azurerm = azurerm.hub
+  }
+
+  # Required variables (generalized module)
+  resource_group_name = var.backup_configuration.resource_group_name
+
+  # Optional configuration with smart defaults
+  location = var.location
+  
+  # Backup policies configuration (security-first: opt-in)
+  create_backup_policies = var.backup_configuration.policies
+  
+  # VM backup configuration
+  vm_backup_time           = var.backup_configuration.vm_backup_time
+  vm_backup_retention_days = var.backup_configuration.vm_backup_retention_days
+  vm_backup_timezone       = var.backup_configuration.vm_backup_timezone
+  
+  # Files backup configuration
+  files_backup_time           = var.backup_configuration.files_backup_time
+  files_backup_retention_days = var.backup_configuration.files_backup_retention_days
+  
+  # Blob backup configuration
+  blob_backup_retention_days = var.backup_configuration.blob_backup_retention_days
+  
+  # SQL backup configuration
+  sql_full_backup_time           = var.backup_configuration.sql_full_backup_time
+  sql_full_backup_retention_days = var.backup_configuration.sql_full_backup_retention_days
+  sql_log_backup_frequency_minutes = var.backup_configuration.sql_log_backup_frequency_minutes
+  sql_log_backup_retention_days  = var.backup_configuration.sql_log_backup_retention_days
+  
+  # Alert configuration
+  enable_backup_alerts = var.backup_configuration.enable_backup_alerts
+  alert_send_to_owners = var.backup_configuration.alert_send_to_owners
+  alert_custom_email_addresses = var.backup_configuration.alert_custom_email_addresses
+  
+  # Tags configuration
+  tags = merge(local.common_tags, {
+    tier = "backup"
+    architecture = var.architecture_mode
+  })
+
+  # Backup services deployed after networking
+  depends_on = [
+    module.hub_networking
+  ]
+}
+
+# ============================================================================
 # SQL SERVER VIRTUAL MACHINES
 # ============================================================================
 

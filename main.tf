@@ -443,6 +443,27 @@ module "backup_services_hub" {
 }
 
 # ============================================================================
+# BACKUP POLICIES ONLY (No Backup Items - Policies Ready for Use)
+# ============================================================================
+
+# NOTE: Backup policies are created by the backup services modules above.
+# To actually protect resources, you would manually configure backup items
+# in the Azure portal or create separate backup item resources.
+#
+# Available backup policies:
+# - VM-Daily7: For virtual machine protection
+# - Files-Daily7: For Azure Files protection  
+# - SQL-HourlyLog7: For SQL Server workload protection
+# - Blob-Daily7: For Azure Storage Account blob protection
+#
+# Example manual protection steps:
+# 1. Go to Azure portal > Recovery Services vault > Backup
+# 2. Select workload type (Azure VM, Azure Files, SQL in Azure VM, etc.)
+# 3. Choose the appropriate policy (VM-Daily7, Files-Daily7, etc.)
+# 4. Select resources to protect
+# 5. Enable backup
+
+# ============================================================================
 # SQL SERVER VIRTUAL MACHINES
 # ============================================================================
 

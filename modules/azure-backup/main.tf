@@ -374,6 +374,8 @@ resource "azurerm_data_protection_backup_policy_blob_storage" "custom_blob" {
   vault_id = azurerm_data_protection_backup_vault.main.id
   
   # Retention configuration
+  # Note: retention_duration will be renamed to operational_default_retention_duration in azurerm v4.0
+  # This is currently working correctly with v3.x provider
   retention_duration = "P${each.value.blob_policy.retention_days}D"
   
   depends_on = [azurerm_data_protection_backup_vault.main]

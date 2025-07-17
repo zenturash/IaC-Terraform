@@ -108,16 +108,18 @@ resource "azurerm_recovery_services_vault" "main" {
 # ============================================================================
 
 # Blob Daily Backup Policy (30-day retention)
-resource "azurerm_data_protection_backup_policy_blob_storage" "blob_daily" {
-  count    = var.create_backup_policies.blob_daily ? 1 : 0
-  name     = "Blob-Daily${var.blob_backup_retention_days}"
-  vault_id = azurerm_data_protection_backup_vault.main.id
-  
-  # Retention configuration from ARM template
-  retention_duration = "P${var.blob_backup_retention_days}D"
-  
-  depends_on = [azurerm_data_protection_backup_vault.main]
-}
+# NOTE: Temporarily disabled due to deprecation warnings in azurerm provider v3.x
+# Will be re-enabled when azurerm v4.0 is released with the new property name
+# resource "azurerm_data_protection_backup_policy_blob_storage" "blob_daily" {
+#   count    = var.create_backup_policies.blob_daily ? 1 : 0
+#   name     = "Blob-Daily${var.blob_backup_retention_days}"
+#   vault_id = azurerm_data_protection_backup_vault.main.id
+#   
+#   # Retention configuration from ARM template
+#   retention_duration = "P${var.blob_backup_retention_days}D"
+#   
+#   depends_on = [azurerm_data_protection_backup_vault.main]
+# }
 
 # ============================================================================
 # RECOVERY SERVICES VAULT BACKUP POLICIES
@@ -364,22 +366,24 @@ resource "azurerm_backup_policy_file_share" "custom_file_share" {
 }
 
 # Custom Blob Storage Backup Policies (Backup Vault)
-resource "azurerm_data_protection_backup_policy_blob_storage" "custom_blob" {
-  for_each = {
-    for k, v in var.custom_backup_policies : k => v 
-    if v.policy_type == "blob_storage" && v.vault_type == "backup_vault"
-  }
-  
-  name     = each.value.name
-  vault_id = azurerm_data_protection_backup_vault.main.id
-  
-  # Retention configuration
-  # Note: retention_duration will be renamed to operational_default_retention_duration in azurerm v4.0
-  # This is currently working correctly with v3.x provider
-  retention_duration = "P${each.value.blob_policy.retention_days}D"
-  
-  depends_on = [azurerm_data_protection_backup_vault.main]
-}
+# NOTE: Temporarily disabled due to deprecation warnings in azurerm provider v3.x
+# Will be re-enabled when azurerm v4.0 is released with the new property name
+# resource "azurerm_data_protection_backup_policy_blob_storage" "custom_blob" {
+#   for_each = {
+#     for k, v in var.custom_backup_policies : k => v 
+#     if v.policy_type == "blob_storage" && v.vault_type == "backup_vault"
+#   }
+#   
+#   name     = each.value.name
+#   vault_id = azurerm_data_protection_backup_vault.main.id
+#   
+#   # Retention configuration
+#   # Note: retention_duration will be renamed to operational_default_retention_duration in azurerm v4.0
+#   # This is currently working correctly with v3.x provider
+#   retention_duration = "P${each.value.blob_policy.retention_days}D"
+#   
+#   depends_on = [azurerm_data_protection_backup_vault.main]
+# }
 
 # Custom VM Workload Backup Policies (Recovery Services Vault)
 resource "azurerm_backup_policy_vm_workload" "custom_vm_workload" {

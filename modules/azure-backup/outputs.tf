@@ -84,12 +84,7 @@ output "backup_policies" {
       timezone = var.files_backup_timezone
     } : null
     
-    blob_daily = var.create_backup_policies.blob_daily ? {
-      id   = azurerm_data_protection_backup_policy_blob_storage.blob_daily[0].id
-      name = azurerm_data_protection_backup_policy_blob_storage.blob_daily[0].name
-      type = "Blob Storage Daily Backup"
-      retention_days = var.blob_backup_retention_days
-    } : null
+    blob_daily = null  # Temporarily disabled due to deprecation warnings
     
     sql_hourly_log = var.create_backup_policies.sql_hourly_log ? {
       id   = azurerm_backup_policy_vm_workload.sql_hourly_log[0].id
@@ -116,9 +111,7 @@ output "backup_policy_ids" {
     var.create_backup_policies.files_daily ? {
       "files_daily" = azurerm_backup_policy_file_share.files_daily[0].id
     } : {},
-    var.create_backup_policies.blob_daily ? {
-      "blob_daily" = azurerm_data_protection_backup_policy_blob_storage.blob_daily[0].id
-    } : {},
+    # blob_daily temporarily disabled due to deprecation warnings
     var.create_backup_policies.sql_hourly_log ? {
       "sql_hourly_log" = azurerm_backup_policy_vm_workload.sql_hourly_log[0].id
     } : {}

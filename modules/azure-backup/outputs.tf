@@ -212,7 +212,7 @@ output "backup_summary" {
       backup_vault  = var.backup_vault_name == null
       recovery_vault = var.recovery_vault_name == null
     }
-    random_suffix_used = var.use_random_suffix
+    random_suffix_used = false
   }
 }
 

@@ -1,18 +1,8 @@
-# Random ID for unique resource naming (if enabled)
-resource "random_id" "main" {
-  count       = var.use_random_suffix ? 1 : 0
-  byte_length = 4
-}
-
 # Local values for resource naming and configuration
 locals {
-  # Generate unique suffix for resource names
-  random_suffix = var.use_random_suffix ? random_id.main[0].hex : ""
-  suffix = var.use_random_suffix ? "-${local.random_suffix}" : ""
-  
   # Determine resource names (auto-generate if not provided)
-  backup_vault_name = var.backup_vault_name != null ? var.backup_vault_name : "${var.resource_name_prefix}-vault${local.suffix}"
-  recovery_vault_name = var.recovery_vault_name != null ? var.recovery_vault_name : "${var.resource_name_prefix}-recovery${local.suffix}"
+  backup_vault_name = var.backup_vault_name != null ? var.backup_vault_name : "backup-vault"
+  recovery_vault_name = var.recovery_vault_name != null ? var.recovery_vault_name : "recovery-vault"
   
   # Comprehensive tagging following project patterns
   base_tags = var.enable_auto_tagging ? {
@@ -22,9 +12,9 @@ locals {
     recovery_storage_redundancy = var.recovery_vault_storage_redundancy
     creation_date              = formatdate("YYYY-MM-DD", timestamp())
     creation_time              = formatdate("YYYY-MM-DD hh:mm:ss ZZZ", timestamp())
-    creation_method            = "OpenTofu"
+    creation_method            = var.creation_method
     location                   = var.location
-    soft_delete_enabled        = "true"
+    soft_delete_enabled        = var.recovery_vault_soft_delete_enabled
     backup_retention_days      = var.backup_vault_soft_delete_retention_days
     recovery_retention_days    = var.recovery_vault_soft_delete_retention_days
     policies_enabled           = jsonencode(var.create_backup_policies)
@@ -69,7 +59,7 @@ resource "azurerm_data_protection_backup_vault" "main" {
   name                = local.backup_vault_name
   resource_group_name = var.resource_group_name
   location            = var.location
-  datastore_type      = "VaultStore"
+  datastore_type      = var.backup_vault_datastore_type
   redundancy          = var.backup_vault_storage_redundancy
   
   # System-assigned managed identity (from ARM template)
@@ -101,7 +91,7 @@ resource "azurerm_recovery_services_vault" "main" {
   public_network_access_enabled    = var.recovery_vault_public_network_access == "Enabled"
   
   # Enhanced security and other settings from ARM template
-  immutability                     = "Disabled"  # Default from ARM
+  immutability                     = var.recovery_vault_immutability
   
   # System-assigned managed identity
   identity {
@@ -140,15 +130,15 @@ resource "azurerm_backup_policy_vm" "vm_daily" {
   resource_group_name = var.resource_group_name
   recovery_vault_name = azurerm_recovery_services_vault.main.name
   
-  # Policy type V1 (from ARM template)
-  policy_type = "V1"
+  # Policy type from ARM template
+  policy_type = var.vm_backup_policy_type
   
   # Timezone configuration from ARM template
   timezone = var.vm_backup_timezone
   
   # Backup schedule configuration
   backup {
-    frequency = "Daily"
+    frequency = var.vm_backup_frequency
     time      = var.vm_backup_time
   }
   

@@ -429,24 +429,164 @@ variable "alert_custom_email_addresses" {
 }
 
 # ============================================================================
-# RESOURCE NAMING CONFIGURATION
+# ADDITIONAL CONFIGURATION VARIABLES (For Hardcoded Values)
 # ============================================================================
 
-variable "resource_name_prefix" {
-  description = "Prefix for backup resource names"
+variable "creation_method" {
+  description = "Method used to create the backup resources"
   type        = string
-  default     = "backup"
+  default     = "OpenTofu"
+}
+
+variable "backup_vault_datastore_type" {
+  description = "Datastore type for backup vault"
+  type        = string
+  default     = "VaultStore"
   
   validation {
-    condition     = length(var.resource_name_prefix) > 0 && length(var.resource_name_prefix) <= 20
-    error_message = "Resource name prefix must be between 1 and 20 characters."
+    condition     = contains(["VaultStore"], var.backup_vault_datastore_type)
+    error_message = "Datastore type must be VaultStore."
   }
 }
 
-variable "use_random_suffix" {
-  description = "Add random suffix to resource names to avoid conflicts"
-  type        = bool
-  default     = false
+variable "recovery_vault_immutability" {
+  description = "Immutability setting for recovery services vault"
+  type        = string
+  default     = "Disabled"
+  
+  validation {
+    condition     = contains(["Enabled", "Disabled"], var.recovery_vault_immutability)
+    error_message = "Immutability must be Enabled or Disabled."
+  }
+}
+
+variable "vm_backup_policy_type" {
+  description = "Policy type for VM backup"
+  type        = string
+  default     = "V1"
+  
+  validation {
+    condition     = contains(["V1", "V2"], var.vm_backup_policy_type)
+    error_message = "VM backup policy type must be V1 or V2."
+  }
+}
+
+variable "vm_backup_frequency" {
+  description = "Backup frequency for VM backups"
+  type        = string
+  default     = "Daily"
+  
+  validation {
+    condition     = contains(["Daily"], var.vm_backup_frequency)
+    error_message = "VM backup frequency must be Daily."
+  }
+}
+
+variable "vm_enhanced_policy_name" {
+  description = "Name for the enhanced VM backup policy"
+  type        = string
+  default     = "EnhancedPolicy"
+}
+
+variable "vm_enhanced_policy_type" {
+  description = "Policy type for enhanced VM backup"
+  type        = string
+  default     = "V2"
+  
+  validation {
+    condition     = contains(["V2"], var.vm_enhanced_policy_type)
+    error_message = "Enhanced VM backup policy type must be V2."
+  }
+}
+
+variable "vm_enhanced_backup_timezone" {
+  description = "Timezone for enhanced VM backup schedules"
+  type        = string
+  default     = "UTC"
+}
+
+variable "vm_enhanced_backup_frequency" {
+  description = "Backup frequency for enhanced VM backups"
+  type        = string
+  default     = "Hourly"
+  
+  validation {
+    condition     = contains(["Hourly"], var.vm_enhanced_backup_frequency)
+    error_message = "Enhanced VM backup frequency must be Hourly."
+  }
+}
+
+variable "vm_enhanced_backup_weekdays" {
+  description = "Weekdays for enhanced VM backup schedule"
+  type        = list(string)
+  default     = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+}
+
+variable "files_backup_frequency" {
+  description = "Backup frequency for Azure Files backups"
+  type        = string
+  default     = "Daily"
+  
+  validation {
+    condition     = contains(["Daily"], var.files_backup_frequency)
+    error_message = "Files backup frequency must be Daily."
+  }
+}
+
+variable "sql_policy_name" {
+  description = "Name for the SQL backup policy"
+  type        = string
+  default     = "HourlyLogBackup"
+}
+
+variable "sql_workload_type" {
+  description = "Workload type for SQL backup policy"
+  type        = string
+  default     = "SQLDataBase"
+  
+  validation {
+    condition     = contains(["SQLDataBase"], var.sql_workload_type)
+    error_message = "SQL workload type must be SQLDataBase."
+  }
+}
+
+variable "sql_backup_timezone" {
+  description = "Timezone for SQL backup schedules"
+  type        = string
+  default     = "UTC"
+}
+
+variable "sql_full_backup_frequency" {
+  description = "Backup frequency for SQL full backups"
+  type        = string
+  default     = "Daily"
+  
+  validation {
+    condition     = contains(["Daily"], var.sql_full_backup_frequency)
+    error_message = "SQL full backup frequency must be Daily."
+  }
+}
+
+variable "sql_log_backup_policy_type" {
+  description = "Policy type for SQL log backups"
+  type        = string
+  default     = "Log"
+  
+  validation {
+    condition     = contains(["Log"], var.sql_log_backup_policy_type)
+    error_message = "SQL log backup policy type must be Log."
+  }
+}
+
+variable "sql_full_backup_policy_type" {
+  description = "Policy type for SQL full backups"
+  type        = string
+  default     = "Full"
+  
+  validation {
+    condition     = contains(["Full"], var.sql_full_backup_policy_type)
+    error_message = "SQL full backup policy type must be Full."
+  }
 }
 
 # ============================================================================

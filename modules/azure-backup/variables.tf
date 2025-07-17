@@ -590,6 +590,107 @@ variable "sql_full_backup_policy_type" {
 }
 
 # ============================================================================
+# CUSTOM BACKUP POLICIES CONFIGURATION
+# ============================================================================
+
+variable "custom_backup_policies" {
+  description = "Map of custom backup policies for types not covered by predefined policies"
+  type = map(object({
+    # Policy type and target
+    policy_type = string # "vm", "file_share", "blob_storage", "vm_workload"
+    vault_type  = string # "backup_vault" or "recovery_vault"
+    
+    # Basic policy configuration
+    name        = string
+    description = optional(string, "Custom backup policy")
+    
+    # VM Policy specific settings (when policy_type = "vm")
+    vm_policy = optional(object({
+      policy_type                    = optional(string, "V1") # V1 or V2
+      timezone                      = optional(string, "UTC")
+      instant_restore_retention_days = optional(number, 2)
+      
+      # Backup schedule
+      backup_frequency = string # Daily, Weekly, Hourly
+      backup_time      = optional(string, "02:00")
+      backup_weekdays  = optional(list(string), ["Sunday"])
+      
+      # For hourly backups (V2 only)
+      hour_interval = optional(number, 4)
+      hour_duration = optional(number, 12)
+      
+      # Retention settings
+      daily_retention_days   = optional(number, 30)
+      weekly_retention_weeks = optional(number, 0)
+      monthly_retention_months = optional(number, 0)
+      yearly_retention_years = optional(number, 0)
+    }))
+    
+    # File Share Policy specific settings (when policy_type = "file_share")
+    file_share_policy = optional(object({
+      timezone         = optional(string, "UTC")
+      backup_frequency = optional(string, "Daily")
+      backup_time      = optional(string, "02:00")
+      retention_days   = optional(number, 30)
+    }))
+    
+    # Blob Storage Policy specific settings (when policy_type = "blob_storage")
+    blob_policy = optional(object({
+      retention_days = optional(number, 30)
+    }))
+    
+    # VM Workload Policy specific settings (when policy_type = "vm_workload")
+    vm_workload_policy = optional(object({
+      workload_type       = string # SQLDataBase, SAPHanaDatabase, etc.
+      timezone           = optional(string, "UTC")
+      compression_enabled = optional(bool, false)
+      
+      # Protection policies (can have multiple)
+      protection_policies = list(object({
+        policy_type = string # Full, Differential, Log, Copy
+        
+        # Backup schedule
+        backup_frequency         = optional(string, "Daily")
+        backup_time             = optional(string, "02:00")
+        backup_weekdays         = optional(list(string), ["Sunday"])
+        frequency_in_minutes    = optional(number) # For Log backups
+        
+        # Retention
+        retention_days   = optional(number, 30)
+        retention_weeks  = optional(number, 0)
+        retention_months = optional(number, 0)
+        retention_years  = optional(number, 0)
+      }))
+    }))
+    
+    # Tags for the policy
+    tags = optional(map(string), {})
+  }))
+  default = {}
+  
+  validation {
+    condition = alltrue([
+      for k, v in var.custom_backup_policies : contains(["vm", "file_share", "blob_storage", "vm_workload"], v.policy_type)
+    ])
+    error_message = "Policy type must be one of: vm, file_share, blob_storage, vm_workload."
+  }
+  
+  validation {
+    condition = alltrue([
+      for k, v in var.custom_backup_policies : contains(["backup_vault", "recovery_vault"], v.vault_type)
+    ])
+    error_message = "Vault type must be either backup_vault or recovery_vault."
+  }
+  
+  validation {
+    condition = alltrue([
+      for k, v in var.custom_backup_policies : length(v.name) > 0 && length(v.name) <= 150
+    ])
+    error_message = "Custom policy name must be between 1 and 150 characters."
+  }
+}
+
+# ============================================================================
 # TAGGING CONFIGURATION
 # ============================================================================
 

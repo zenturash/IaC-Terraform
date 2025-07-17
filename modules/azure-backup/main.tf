@@ -265,6 +265,184 @@ resource "azurerm_backup_policy_vm_workload" "sql_hourly_log" {
 # For now, we'll document this as a manual configuration step.
 
 # ============================================================================
+# CUSTOM BACKUP POLICIES
+# ============================================================================
+
+# Custom VM Backup Policies (Recovery Services Vault)
+resource "azurerm_backup_policy_vm" "custom_vm" {
+  for_each = {
+    for k, v in var.custom_backup_policies : k => v 
+    if v.policy_type == "vm" && v.vault_type == "recovery_vault"
+  }
+  
+  name                = each.value.name
+  resource_group_name = var.resource_group_name
+  recovery_vault_name = azurerm_recovery_services_vault.main.name
+  
+  # Policy configuration from custom settings
+  policy_type = each.value.vm_policy.policy_type
+  timezone    = each.value.vm_policy.timezone
+  
+  # Backup schedule configuration
+  backup {
+    frequency = each.value.vm_policy.backup_frequency
+    time      = each.value.vm_policy.backup_time
+    weekdays  = each.value.vm_policy.backup_frequency == "Weekly" ? each.value.vm_policy.backup_weekdays : null
+    
+    # Hourly backup settings (V2 only)
+    hour_interval = each.value.vm_policy.policy_type == "V2" && each.value.vm_policy.backup_frequency == "Hourly" ? each.value.vm_policy.hour_interval : null
+    hour_duration = each.value.vm_policy.policy_type == "V2" && each.value.vm_policy.backup_frequency == "Hourly" ? each.value.vm_policy.hour_duration : null
+  }
+  
+  # Retention configuration
+  dynamic "retention_daily" {
+    for_each = each.value.vm_policy.daily_retention_days > 0 ? [1] : []
+    content {
+      count = each.value.vm_policy.daily_retention_days
+    }
+  }
+  
+  dynamic "retention_weekly" {
+    for_each = each.value.vm_policy.weekly_retention_weeks > 0 ? [1] : []
+    content {
+      count    = each.value.vm_policy.weekly_retention_weeks
+      weekdays = each.value.vm_policy.backup_weekdays
+    }
+  }
+  
+  dynamic "retention_monthly" {
+    for_each = each.value.vm_policy.monthly_retention_months > 0 ? [1] : []
+    content {
+      count    = each.value.vm_policy.monthly_retention_months
+      weekdays = each.value.vm_policy.backup_weekdays
+      weeks    = ["First"]
+    }
+  }
+  
+  dynamic "retention_yearly" {
+    for_each = each.value.vm_policy.yearly_retention_years > 0 ? [1] : []
+    content {
+      count    = each.value.vm_policy.yearly_retention_years
+      weekdays = each.value.vm_policy.backup_weekdays
+      weeks    = ["First"]
+      months   = ["January"]
+    }
+  }
+  
+  # Instant restore configuration
+  instant_restore_retention_days = each.value.vm_policy.instant_restore_retention_days
+  
+  depends_on = [azurerm_recovery_services_vault.main]
+}
+
+# Custom File Share Backup Policies (Recovery Services Vault)
+resource "azurerm_backup_policy_file_share" "custom_file_share" {
+  for_each = {
+    for k, v in var.custom_backup_policies : k => v 
+    if v.policy_type == "file_share" && v.vault_type == "recovery_vault"
+  }
+  
+  name                = each.value.name
+  resource_group_name = var.resource_group_name
+  recovery_vault_name = azurerm_recovery_services_vault.main.name
+  
+  # Timezone configuration
+  timezone = each.value.file_share_policy.timezone
+  
+  # Backup schedule configuration
+  backup {
+    frequency = each.value.file_share_policy.backup_frequency
+    time      = each.value.file_share_policy.backup_time
+  }
+  
+  # Retention configuration
+  retention_daily {
+    count = each.value.file_share_policy.retention_days
+  }
+  
+  depends_on = [azurerm_recovery_services_vault.main]
+}
+
+# Custom Blob Storage Backup Policies (Backup Vault)
+resource "azurerm_data_protection_backup_policy_blob_storage" "custom_blob" {
+  for_each = {
+    for k, v in var.custom_backup_policies : k => v 
+    if v.policy_type == "blob_storage" && v.vault_type == "backup_vault"
+  }
+  
+  name     = each.value.name
+  vault_id = azurerm_data_protection_backup_vault.main.id
+  
+  # Retention configuration
+  retention_duration = "P${each.value.blob_policy.retention_days}D"
+  
+  depends_on = [azurerm_data_protection_backup_vault.main]
+}
+
+# Custom VM Workload Backup Policies (Recovery Services Vault)
+resource "azurerm_backup_policy_vm_workload" "custom_vm_workload" {
+  for_each = {
+    for k, v in var.custom_backup_policies : k => v 
+    if v.policy_type == "vm_workload" && v.vault_type == "recovery_vault"
+  }
+  
+  name                = each.value.name
+  resource_group_name = var.resource_group_name
+  recovery_vault_name = azurerm_recovery_services_vault.main.name
+  workload_type       = each.value.vm_workload_policy.workload_type
+  
+  # Settings configuration
+  settings {
+    time_zone           = each.value.vm_workload_policy.timezone
+    compression_enabled = each.value.vm_workload_policy.compression_enabled
+  }
+  
+  # Dynamic protection policies
+  dynamic "protection_policy" {
+    for_each = each.value.vm_workload_policy.protection_policies
+    content {
+      policy_type = protection_policy.value.policy_type
+      
+      # Backup schedule
+      dynamic "backup" {
+        for_each = protection_policy.value.policy_type != "Log" ? [1] : []
+        content {
+          frequency = protection_policy.value.backup_frequency
+          time      = protection_policy.value.backup_time
+          weekdays  = protection_policy.value.backup_frequency == "Weekly" ? protection_policy.value.backup_weekdays : null
+        }
+      }
+      
+      # Log backup schedule (for Log policy type)
+      dynamic "backup" {
+        for_each = protection_policy.value.policy_type == "Log" ? [1] : []
+        content {
+          frequency_in_minutes = protection_policy.value.frequency_in_minutes
+        }
+      }
+      
+      # Retention configuration for non-Log policies
+      dynamic "retention_daily" {
+        for_each = protection_policy.value.policy_type != "Log" && protection_policy.value.retention_days > 0 ? [1] : []
+        content {
+          count = protection_policy.value.retention_days
+        }
+      }
+      
+      # Simple retention for Log policies
+      dynamic "simple_retention" {
+        for_each = protection_policy.value.policy_type == "Log" ? [1] : []
+        content {
+          count = protection_policy.value.retention_days
+        }
+      }
+    }
+  }
+  
+  depends_on = [azurerm_recovery_services_vault.main]
+}
+
+# ============================================================================
 # RECOVERY SERVICES VAULT SETTINGS
 # ============================================================================
 

@@ -1,17 +1,3 @@
-# Configure the Azure Provider
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.1"
-    }
-  }
-}
-
 # Random ID for unique resource naming (if enabled)
 resource "random_id" "main" {
   count       = var.use_random_suffix ? 1 : 0

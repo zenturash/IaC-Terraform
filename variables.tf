@@ -328,6 +328,79 @@ variable "backup_configuration" {
     enable_backup_alerts = optional(bool, true)
     alert_send_to_owners = optional(string, "DoNotSend")
     alert_custom_email_addresses = optional(list(string), [])
+    
+    # Custom backup policies (for advanced scenarios)
+    custom_backup_policies = optional(map(object({
+      # Policy type and target
+      policy_type = string # "vm", "file_share", "blob_storage", "vm_workload"
+      vault_type  = string # "backup_vault" or "recovery_vault"
+      
+      # Basic policy configuration
+      name        = string
+      description = optional(string, "Custom backup policy")
+      
+      # VM Policy specific settings (when policy_type = "vm")
+      vm_policy = optional(object({
+        policy_type                    = optional(string, "V1") # V1 or V2
+        timezone                      = optional(string, "UTC")
+        instant_restore_retention_days = optional(number, 2)
+        
+        # Backup schedule
+        backup_frequency = string # Daily, Weekly, Hourly
+        backup_time      = optional(string, "02:00")
+        backup_weekdays  = optional(list(string), ["Sunday"])
+        
+        # For hourly backups (V2 only)
+        hour_interval = optional(number, 4)
+        hour_duration = optional(number, 12)
+        
+        # Retention settings
+        daily_retention_days   = optional(number, 30)
+        weekly_retention_weeks = optional(number, 0)
+        monthly_retention_months = optional(number, 0)
+        yearly_retention_years = optional(number, 0)
+      }))
+      
+      # File Share Policy specific settings (when policy_type = "file_share")
+      file_share_policy = optional(object({
+        timezone         = optional(string, "UTC")
+        backup_frequency = optional(string, "Daily")
+        backup_time      = optional(string, "02:00")
+        retention_days   = optional(number, 30)
+      }))
+      
+      # Blob Storage Policy specific settings (when policy_type = "blob_storage")
+      blob_policy = optional(object({
+        retention_days = optional(number, 30)
+      }))
+      
+      # VM Workload Policy specific settings (when policy_type = "vm_workload")
+      vm_workload_policy = optional(object({
+        workload_type       = string # SQLDataBase, SAPHanaDatabase, etc.
+        timezone           = optional(string, "UTC")
+        compression_enabled = optional(bool, false)
+        
+        # Protection policies (can have multiple)
+        protection_policies = list(object({
+          policy_type = string # Full, Differential, Log, Copy
+          
+          # Backup schedule
+          backup_frequency         = optional(string, "Daily")
+          backup_time             = optional(string, "02:00")
+          backup_weekdays         = optional(list(string), ["Sunday"])
+          frequency_in_minutes    = optional(number) # For Log backups
+          
+          # Retention
+          retention_days   = optional(number, 30)
+          retention_weeks  = optional(number, 0)
+          retention_months = optional(number, 0)
+          retention_years  = optional(number, 0)
+        }))
+      }))
+      
+      # Tags for the policy
+      tags = optional(map(string), {})
+    })), {})
   })
   default = {
     resource_group_name = "rg-backup-services"

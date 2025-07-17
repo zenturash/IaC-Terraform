@@ -369,6 +369,9 @@ module "backup_services_single" {
   alert_send_to_owners = var.backup_configuration.alert_send_to_owners
   alert_custom_email_addresses = var.backup_configuration.alert_custom_email_addresses
   
+  # Custom backup policies (for advanced scenarios)
+  custom_backup_policies = var.backup_configuration.custom_backup_policies
+  
   # Tags configuration
   tags = merge(local.common_tags, {
     tier = "backup"
@@ -421,6 +424,9 @@ module "backup_services_hub" {
   enable_backup_alerts = var.backup_configuration.enable_backup_alerts
   alert_send_to_owners = var.backup_configuration.alert_send_to_owners
   alert_custom_email_addresses = var.backup_configuration.alert_custom_email_addresses
+  
+  # Custom backup policies (for advanced scenarios)
+  custom_backup_policies = var.backup_configuration.custom_backup_policies
   
   # Tags configuration
   tags = merge(local.common_tags, {

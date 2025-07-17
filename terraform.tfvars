@@ -245,6 +245,86 @@ backup_configuration = {
   alert_custom_email_addresses = [                     # Test email addresses
     "backup-test@zentura.com"
   ]
+  
+  # Custom backup policies (for advanced scenarios not covered by predefined policies)
+  custom_backup_policies = {
+    # Example 1: Weekly VM backup with yearly retention
+    "weekly-vm-with-yearly" = {
+      policy_type = "vm"
+      vault_type  = "recovery_vault"
+      name        = "WeeklyVMWithYearly"
+      description = "Weekly VM backup with 7-year yearly retention"
+      
+      vm_policy = {
+        policy_type      = "V1"
+        timezone         = "Romance Standard Time"
+        backup_frequency = "Weekly"
+        backup_weekdays  = ["Sunday"]
+        backup_time      = "03:00"
+        
+        # Retention configuration
+        daily_retention_days     = 0   # No daily retention
+        weekly_retention_weeks   = 12  # 12 weeks
+        monthly_retention_months = 12  # 12 months
+        yearly_retention_years   = 7   # 7 years
+      }
+      
+      tags = {
+        policy_type = "long-term"
+        environment = "test"
+      }
+    }
+    
+    # Example 2: Custom SQL Server backup with 15-minute log frequency
+    "custom-sql-frequent-logs" = {
+      policy_type = "vm_workload"
+      vault_type  = "recovery_vault"
+      name        = "CustomSQLFrequentLogs"
+      description = "SQL Server backup with 15-minute log backups"
+      
+      vm_workload_policy = {
+        workload_type       = "SQLDataBase"
+        timezone           = "Romance Standard Time"
+        compression_enabled = true
+        
+        protection_policies = [
+          {
+            policy_type      = "Full"
+            backup_frequency = "Daily"
+            backup_time      = "02:00"
+            retention_days   = 30
+          },
+          {
+            policy_type          = "Log"
+            frequency_in_minutes = 15  # Every 15 minutes
+            retention_days       = 7
+          }
+        ]
+      }
+      
+      tags = {
+        policy_type = "high-frequency"
+        workload    = "sql-server"
+      }
+    }
+    
+    # Example 3: Long-term blob storage backup
+    "blob-long-term" = {
+      policy_type = "blob_storage"
+      vault_type  = "backup_vault"
+      name        = "BlobLongTerm90Days"
+      description = "Blob storage backup with 90-day retention"
+      
+      blob_policy = {
+        retention_days = 90
+      }
+      
+      tags = {
+        policy_type = "long-term"
+        storage     = "blob"
+      }
+    }
+  }
 }
 
 # ========================================

@@ -146,6 +146,202 @@ tags = {
 }
 
 # ========================================
+# CUSTOM BACKUP POLICIES EXAMPLES
+# ========================================
+
+# Custom backup policies for advanced scenarios not covered by predefined policies
+custom_backup_policies = {
+  # ----------------------------------------
+  # EXAMPLE 1: Weekly VM Backup with Long-term Retention
+  # ----------------------------------------
+  "weekly-vm-long-term" = {
+    policy_type = "vm"
+    vault_type  = "recovery_vault"
+    name        = "WeeklyVMLongTerm"
+    description = "Weekly VM backup with 10-year retention"
+    
+    vm_policy = {
+      policy_type                    = "V1"
+      timezone                      = "Romance Standard Time"
+      instant_restore_retention_days = 2
+      
+      # Weekly backup schedule
+      backup_frequency = "Weekly"
+      backup_weekdays  = ["Sunday"]
+      backup_time      = "02:00"
+      
+      # Long-term retention
+      daily_retention_days     = 0   # No daily retention
+      weekly_retention_weeks   = 52  # 1 year of weekly backups
+      monthly_retention_months = 60  # 5 years of monthly backups
+      yearly_retention_years   = 10  # 10 years of yearly backups
+    }
+    
+    tags = {
+      policy_type = "long-term"
+      environment = "production"
+      compliance  = "required"
+    }
+  }
+  
+  # ----------------------------------------
+  # EXAMPLE 2: High-Frequency SQL Server Backup
+  # ----------------------------------------
+  "sql-high-frequency" = {
+    policy_type = "vm_workload"
+    vault_type  = "recovery_vault"
+    name        = "SQLHighFrequency"
+    description = "SQL Server with 5-minute log backups for critical databases"
+    
+    vm_workload_policy = {
+      workload_type       = "SQLDataBase"
+      timezone           = "Romance Standard Time"
+      compression_enabled = true
+      
+      protection_policies = [
+        {
+          policy_type      = "Full"
+          backup_frequency = "Daily"
+          backup_time      = "01:00"
+          retention_days   = 90
+        },
+        {
+          policy_type      = "Differential"
+          backup_frequency = "Daily"
+          backup_time      = "13:00"  # Midday differential
+          retention_days   = 30
+        },
+        {
+          policy_type          = "Log"
+          frequency_in_minutes = 5   # Every 5 minutes for critical systems
+          retention_days       = 14
+        }
+      ]
+    }
+    
+    tags = {
+      policy_type = "high-frequency"
+      workload    = "sql-server"
+      criticality = "critical"
+    }
+  }
+  
+  # ----------------------------------------
+  # EXAMPLE 3: Enhanced VM Backup (V2 Policy)
+  # ----------------------------------------
+  "vm-enhanced-hourly" = {
+    policy_type = "vm"
+    vault_type  = "recovery_vault"
+    name        = "VMEnhancedHourly"
+    description = "Enhanced VM backup with 2-hour intervals during business hours"
+    
+    vm_policy = {
+      policy_type                    = "V2"
+      timezone                      = "Romance Standard Time"
+      instant_restore_retention_days = 5
+      
+      # Hourly backup schedule (V2 only)
+      backup_frequency = "Hourly"
+      backup_time      = "08:00"  # Start at 8 AM
+      hour_interval    = 2        # Every 2 hours
+      hour_duration    = 10       # 10-hour window (8 AM to 6 PM)
+      
+      # Retention configuration
+      daily_retention_days     = 30
+      weekly_retention_weeks   = 12
+      monthly_retention_months = 6
+      yearly_retention_years   = 2
+    }
+    
+    tags = {
+      policy_type = "enhanced"
+      schedule    = "business-hours"
+      environment = "production"
+    }
+  }
+  
+  # ----------------------------------------
+  # EXAMPLE 4: Long-term Blob Storage Backup
+  # ----------------------------------------
+  "blob-compliance" = {
+    policy_type = "blob_storage"
+    vault_type  = "backup_vault"
+    name        = "BlobCompliance7Years"
+    description = "Blob storage backup for compliance with 7-year retention"
+    
+    blob_policy = {
+      retention_days = 2555  # 7 years (7 * 365 = 2555 days)
+    }
+    
+    tags = {
+      policy_type = "compliance"
+      retention   = "7-years"
+      storage     = "blob"
+    }
+  }
+  
+  # ----------------------------------------
+  # EXAMPLE 5: Custom File Share Backup
+  # ----------------------------------------
+  "files-custom-schedule" = {
+    policy_type = "file_share"
+    vault_type  = "recovery_vault"
+    name        = "FilesCustomSchedule"
+    description = "Custom file share backup with specific timezone"
+    
+    file_share_policy = {
+      timezone         = "Pacific Standard Time"
+      backup_frequency = "Daily"
+      backup_time      = "23:00"  # 11 PM PST
+      retention_days   = 180      # 6 months retention
+    }
+    
+    tags = {
+      policy_type = "custom"
+      timezone    = "pst"
+      storage     = "files"
+    }
+  }
+  
+  # ----------------------------------------
+  # EXAMPLE 6: SAP HANA Database Backup
+  # ----------------------------------------
+  "sap-hana-backup" = {
+    policy_type = "vm_workload"
+    vault_type  = "recovery_vault"
+    name        = "SAPHanaBackup"
+    description = "SAP HANA database backup with optimized schedule"
+    
+    vm_workload_policy = {
+      workload_type       = "SAPHanaDatabase"
+      timezone           = "Romance Standard Time"
+      compression_enabled = false  # SAP HANA handles compression
+      
+      protection_policies = [
+        {
+          policy_type      = "Full"
+          backup_frequency = "Weekly"
+          backup_weekdays  = ["Sunday"]
+          backup_time      = "02:00"
+          retention_weeks  = 12
+        },
+        {
+          policy_type          = "Log"
+          frequency_in_minutes = 15
+          retention_days       = 35  # Maximum for SAP HANA
+        }
+      ]
+    }
+    
+    tags = {
+      workload    = "sap-hana"
+      environment = "production"
+      database    = "enterprise"
+    }
+  }
+}
+
+# ========================================
 # ALTERNATIVE CONFIGURATIONS
 # ========================================
 

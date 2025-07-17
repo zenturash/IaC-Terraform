@@ -296,7 +296,7 @@ resource "azurerm_backup_policy_vm" "custom_vm" {
     hour_duration = each.value.vm_policy.policy_type == "V2" && each.value.vm_policy.backup_frequency == "Hourly" ? each.value.vm_policy.hour_duration : null
   }
   
-  # Retention configuration
+  # Retention configuration - only create blocks when retention > 0
   dynamic "retention_daily" {
     for_each = each.value.vm_policy.daily_retention_days > 0 ? [1] : []
     content {
@@ -308,7 +308,7 @@ resource "azurerm_backup_policy_vm" "custom_vm" {
     for_each = each.value.vm_policy.weekly_retention_weeks > 0 ? [1] : []
     content {
       count    = each.value.vm_policy.weekly_retention_weeks
-      weekdays = each.value.vm_policy.backup_weekdays
+      weekdays = each.value.vm_policy.backup_frequency == "Weekly" ? each.value.vm_policy.backup_weekdays : ["Sunday"]
     }
   }
   
@@ -316,7 +316,7 @@ resource "azurerm_backup_policy_vm" "custom_vm" {
     for_each = each.value.vm_policy.monthly_retention_months > 0 ? [1] : []
     content {
       count    = each.value.vm_policy.monthly_retention_months
-      weekdays = each.value.vm_policy.backup_weekdays
+      weekdays = each.value.vm_policy.backup_frequency == "Weekly" ? each.value.vm_policy.backup_weekdays : ["Sunday"]
       weeks    = ["First"]
     }
   }
@@ -325,7 +325,7 @@ resource "azurerm_backup_policy_vm" "custom_vm" {
     for_each = each.value.vm_policy.yearly_retention_years > 0 ? [1] : []
     content {
       count    = each.value.vm_policy.yearly_retention_years
-      weekdays = each.value.vm_policy.backup_weekdays
+      weekdays = each.value.vm_policy.backup_frequency == "Weekly" ? each.value.vm_policy.backup_weekdays : ["Sunday"]
       weeks    = ["First"]
       months   = ["January"]
     }

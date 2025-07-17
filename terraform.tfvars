@@ -256,11 +256,12 @@ backup_configuration = {
       description = "Weekly VM backup with 7-year yearly retention"
       
       vm_policy = {
-        policy_type      = "V1"
-        timezone         = "Romance Standard Time"
-        backup_frequency = "Weekly"
-        backup_weekdays  = ["Sunday"]
-        backup_time      = "03:00"
+        policy_type                    = "V1"
+        timezone                      = "Romance Standard Time"
+        instant_restore_retention_days = 2
+        backup_frequency              = "Weekly"
+        backup_weekdays               = ["Sunday"]
+        backup_time                   = "03:00"
         
         # Retention configuration
         daily_retention_days     = 0   # No daily retention

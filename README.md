@@ -23,11 +23,12 @@ A flexible OpenTofu module for deploying Azure infrastructure with support for b
 - **Clean Resource Naming**: Predictable resource names without random suffixes
 - **Smart Defaults**: Works with minimal configuration, powerful when needed
 - **Security-First**: No automatic security rules - explicit security configuration
-- **Complete Infrastructure**: Resource Groups, VNets, Subnets, VMs, VPN Gateway
+- **Complete Infrastructure**: Resource Groups, VNets, Subnets, VMs, VPN Gateway, Backup Services
 - **VNet Peering**: Automatic hub-spoke peering configuration
 - **Windows Server 2025**: Latest Windows Server with password authentication
 - **Flexible VM Deployment**: Deploy VMs across hub and spoke networks
 - **VPN Gateway**: Site-to-site VPN connectivity with comprehensive configuration
+- **Azure Backup Services**: Comprehensive backup infrastructure with dual vault architecture
 - **Comprehensive Tagging**: Automatic tagging with creation date and metadata
 - **Multi-Subscription**: Support for ALZ multi-subscription patterns
 - **Backward Compatibility**: Existing configurations continue to work
@@ -272,6 +273,158 @@ vpn_configuration = {
 - **Connection Protocol**: `IKEv2` (secure default)
 - **Clean Naming**: `vpn-gateway-test`, `vpn-connection-test` (no random suffixes)
 
+## 🛡️ Azure Backup Services Configuration (Generalized Module)
+
+The backup module provides comprehensive backup infrastructure with dual vault architecture following Azure best practices:
+
+### Required Variables Only
+```hcl
+backup_services = {
+  "hub" = {
+    # REQUIRED: Basic configuration
+    resource_group_name = "rg-backup-hub"
+    
+    # OPTIONAL: Smart defaults for everything else
+    location = "West Europe"  # Override default (uses global location)
+    
+    # OPTIONAL: Vault names (auto-generated if not specified)
+    backup_vault_name   = null  # Auto-generates: backup-vault
+    recovery_vault_name = null  # Auto-generates: recovery-vault
+    
+    # OPTIONAL: Policy configuration (all enabled by default)
+    create_backup_policies = {
+      vm_daily       = true   # VM backup policy
+      vm_enhanced    = false  # Enhanced VM backup (hourly)
+      files_daily    = true   # Azure Files backup policy
+      blob_daily     = true   # Blob storage backup policy
+      sql_hourly_log = true   # SQL Server backup policy
+    }
+    
+    # OPTIONAL: Retention settings (smart defaults)
+    vm_backup_retention_days    = 7   # Override default (30)
+    files_backup_retention_days = 7   # Override default (30)
+    blob_backup_retention_days  = 7   # Override default (30)
+  }
+}
+```
+
+### What You Get by Default
+- **Dual Vault Architecture**: Azure Backup Vault + Recovery Services Vault
+- **Storage Redundancy**: `GeoRedundant` (secure default)
+- **Soft Delete**: Enabled with 14-day retention (security default)
+- **Enhanced Security**: Enabled for Recovery Services Vault
+- **System-Assigned Identity**: Automatic managed identity configuration
+- **Comprehensive Policies**: VM, Files, Blob, and SQL backup policies
+- **Clean Naming**: `backup-vault`, `recovery-vault` (no random suffixes)
+
+### Backup Policy Types
+
+#### Azure Backup Vault (Modern Services)
+```hcl
+# Blob Storage Backup Policy
+"blob_daily" = {
+  id             = "/subscriptions/.../backupPolicies/Blob-Daily7"
+  name           = "Blob-Daily7"
+  type           = "Blob Storage Daily Backup"
+  retention_days = 7
+  vault_id       = "/subscriptions/.../backupVaults/backup-vault"
+}
+```
+
+#### Recovery Services Vault (Traditional Services)
+```hcl
+# Virtual Machine Backup Policy
+"vm_daily" = {
+  id             = "/subscriptions/.../backupPolicies/VM-Daily7"
+  name           = "VM-Daily7"
+  type           = "VM Daily Backup"
+  retention_days = 7
+  backup_time    = "02:00"
+  timezone       = "Romance Standard Time"
+}
+
+# Azure Files Backup Policy
+"files_daily" = {
+  id             = "/subscriptions/.../backupPolicies/Files-Daily7"
+  name           = "Files-Daily7"
+  type           = "Azure Files Daily Backup"
+  retention_days = 7
+  backup_time    = "02:30"
+  timezone       = "Romance Standard Time"
+}
+
+# SQL Server Backup Policy
+"sql_hourly_log" = {
+  id                     = "/subscriptions/.../backupPolicies/SQL-HourlyLog7"
+  name                   = "SQL-HourlyLog7"
+  type                   = "SQL Server Hourly Log Backup"
+  full_backup_time       = "03:00"
+  full_retention_days    = 7
+  log_frequency_minutes  = 60
+  log_retention_days     = 7
+  compression_enabled    = false
+}
+```
+
+### Advanced Backup Configuration
+
+```hcl
+backup_services = {
+  "production" = {
+    resource_group_name = "rg-backup-prod"
+    
+    # Production-grade configuration
+    backup_vault_storage_redundancy   = "GeoRedundant"
+    recovery_vault_storage_redundancy = "GeoRedundant"
+    
+    # Extended retention for production
+    vm_backup_retention_days     = 30
+    files_backup_retention_days  = 90
+    blob_backup_retention_days   = 365
+    sql_full_backup_retention_days = 30
+    sql_log_backup_retention_days  = 15
+    
+    # Enhanced security settings
+    backup_vault_soft_delete_retention_days  = 30
+    recovery_vault_soft_delete_retention_days = 30
+    recovery_vault_enhanced_security_state    = "Enabled"
+    
+    # Custom backup schedules
+    vm_backup_time     = "01:00"
+    files_backup_time  = "02:00"
+    sql_full_backup_time = "03:00"
+    
+    # Enable enhanced VM backup (hourly)
+    create_backup_policies = {
+      vm_daily       = true
+      vm_enhanced    = true   # Hourly backup with 4-hour intervals
+      files_daily    = true
+      blob_daily     = true
+      sql_hourly_log = true
+    }
+    
+    # Enhanced VM backup settings
+    vm_enhanced_backup_interval_hours  = 4
+    vm_enhanced_backup_window_start    = "08:00"
+    vm_enhanced_backup_window_duration = 12
+  }
+}
+```
+
+### Portal Navigation Guide
+
+#### Azure Backup Vault (Modern Services)
+1. **Navigate to**: Resource Group → `backup-vault`
+2. **Find Policies**: Backup policies
+3. **Available Policies**: `Blob-Daily7`
+4. **Use For**: Storage Account blob backup
+
+#### Recovery Services Vault (Traditional Services)
+1. **Navigate to**: Resource Group → `recovery-vault`
+2. **Find Policies**: Backup policies
+3. **Available Policies**: `VM-Daily7`, `Files-Daily7`, `SQL-HourlyLog7`
+4. **Use For**: VM, Azure Files, SQL Server backup
+
 ## 📊 Outputs
 
 ### Architecture Information
@@ -318,7 +471,8 @@ output "connection_guide"   # Quick connection guide
 │   ├── azure-networking/     # VNet and subnet management (generalized)
 │   ├── azure-vm/            # Virtual machine deployment (generalized)
 │   ├── azure-vpn/           # VPN Gateway and connections (generalized)
-│   └── azure-vnet-peering/  # VNet peering management (generalized)
+│   ├── azure-vnet-peering/  # VNet peering management (generalized)
+│   └── azure-backup/        # Backup services with dual vault architecture (generalized)
 ├── memory-bank/              # Project documentation
 ├── main.tf                   # Root configuration with conditional logic
 ├── variables.tf              # All configuration variables
@@ -326,6 +480,7 @@ output "connection_guide"   # Quick connection guide
 ├── terraform.tfvars          # Current test configuration
 ├── terraform.tfvars.single-vnet      # Single VNet example
 ├── terraform.tfvars.hub-spoke        # Hub-Spoke ALZ example
+├── terraform.tfvars.backup-example   # Backup services example
 ├── terraform.tfvars.example          # Original example
 ├── MODULE-GENERALIZATION-GUIDE.md    # Module design principles
 └── README.md

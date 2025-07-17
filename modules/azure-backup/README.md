@@ -496,6 +496,49 @@ This module implements all settings from the provided ARM template as smart defa
 - **Alert Settings**: Configurable notifications and email alerts
 - **Security Settings**: Soft delete, enhanced security, cross-subscription restore
 
+## 🚨 Important Notes
+
+### Blob Backup Policy Portal Navigation
+- **Azure Backup Vault**: Blob backup policies are located here (NOT in Recovery Services Vault)
+- **Portal Path**: Resource Group → `backup-vault` → Backup policies → `Blob-Daily7`
+- **Common Confusion**: Users often look in Recovery Services Vault for blob policies
+- **Dual Vault Architecture**: Modern services (Blobs) use Azure Backup Vault, traditional services (VMs, Files, SQL) use Recovery Services Vault
+
+### Recent Fix: Blob Backup Policy Outputs
+**Issue Resolved (2025-01-17)**: Blob backup policy was being created correctly but not visible in OpenTofu outputs.
+
+**Root Cause**: The `blob_daily` output was hardcoded to `null` in the module's outputs.tf file.
+
+**Fix Applied**: 
+- Updated `modules/azure-backup/outputs.tf` to properly expose blob backup policy information
+- Added blob backup policy to `backup_policy_ids` mapping
+- Verified policy deployment in Azure Backup Vault
+
+**Verification**: 
+```bash
+# Check blob backup policy in outputs
+tofu output backup_services | grep -A 10 "blob_daily"
+
+# Expected result:
+"blob_daily" = {
+  "id" = "/subscriptions/.../backupPolicies/Blob-Daily7"
+  "name" = "Blob-Daily7"
+  "type" = "Blob Storage Daily Backup"
+  "retention_days" = 7
+  "vault_id" = "/subscriptions/.../backupVaults/backup-vault"
+}
+```
+
+### Policy Naming Convention
+- **Predictable Names**: No random suffixes (e.g., `VM-Daily30`, `Blob-Daily7`)
+- **Retention Included**: Policy names include retention period for clarity
+- **Type Specific**: Clear indication of backup type and schedule
+
+### Deprecation Warnings
+- **Blob Policy**: Currently uses deprecated `retention_duration` parameter
+- **Future Compatibility**: Will be updated to `operational_default_retention_duration` in future versions
+- **No Impact**: Functionality remains unchanged, warning can be safely ignored
+
 ## 🤝 Contributing
 
 This module follows the principles outlined in `MODULE-GENERALIZATION-GUIDE.md`:

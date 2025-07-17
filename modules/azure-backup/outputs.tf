@@ -163,13 +163,11 @@ output "recovery_vault_configuration" {
 
 output "backup_alerts_configuration" {
   description = "Backup alerts configuration"
-  value = var.enable_backup_alerts ? {
-    enabled                = true
+  value = {
+    enabled                = var.enable_backup_alerts
     send_to_owners        = var.alert_send_to_owners
     custom_email_addresses = var.alert_custom_email_addresses
-    notification_id       = azurerm_backup_vault_notification.main[0].id
-  } : {
-    enabled = false
+    note                  = "Alert configuration requires manual setup via Azure Portal, CLI, or ARM templates"
   }
 }
 

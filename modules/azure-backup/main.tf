@@ -268,18 +268,11 @@ resource "azurerm_backup_policy_vm_workload" "sql_hourly_log" {
 # RECOVERY SERVICES VAULT ALERT SETTINGS
 # ============================================================================
 
-resource "azurerm_backup_vault_notification" "main" {
-  count               = var.enable_backup_alerts ? 1 : 0
-  resource_group_name = var.resource_group_name
-  recovery_vault_name = azurerm_recovery_services_vault.main.name
-  
-  # Alert configuration from ARM template
-  notifications_enabled    = true
-  send_to_owners          = var.alert_send_to_owners == "Send"
-  custom_email_addresses  = var.alert_custom_email_addresses
-  
-  depends_on = [azurerm_recovery_services_vault.main]
-}
+# Note: Backup alert settings are configured through the Recovery Services Vault
+# properties. The azurerm_backup_vault_notification resource doesn't exist in
+# the current provider version. Alert configuration would need to be done
+# through Azure CLI, PowerShell, or ARM templates after vault creation.
+# For now, we'll document this as a manual configuration step.
 
 # ============================================================================
 # RECOVERY SERVICES VAULT SETTINGS

@@ -214,7 +214,7 @@ resource "azurerm_backup_policy_file_share" "files_daily" {
 # SQL Server Hourly Log Backup Policy
 resource "azurerm_backup_policy_vm_workload" "sql_hourly_log" {
   count               = var.create_backup_policies.sql_hourly_log ? 1 : 0
-  name                = "HourlyLogBackup"
+  name                = "SQL-HourlyLog${var.sql_log_backup_retention_days}"
   resource_group_name = var.resource_group_name
   recovery_vault_name = azurerm_recovery_services_vault.main.name
   workload_type       = "SQLDataBase"
